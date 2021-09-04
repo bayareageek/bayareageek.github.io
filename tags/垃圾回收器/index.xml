@@ -2,17 +2,17 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>垃圾回收器 on </title>
-    <link>https://bayareageek.github.io/tags/%E5%9E%83%E5%9C%BE%E5%9B%9E%E6%94%B6%E5%99%A8/</link>
+    <link>https://bayareageek.cn/tags/%E5%9E%83%E5%9C%BE%E5%9B%9E%E6%94%B6%E5%99%A8/</link>
     <description>Recent content in 垃圾回收器 on </description>
     <generator>Hugo -- gohugo.io</generator>
     <language>zh-cn</language>
-    <lastBuildDate>Thu, 08 Apr 2021 14:39:45 +0000</lastBuildDate><atom:link href="https://bayareageek.github.io/tags/%E5%9E%83%E5%9C%BE%E5%9B%9E%E6%94%B6%E5%99%A8/index.xml" rel="self" type="application/rss+xml" />
+    <lastBuildDate>Thu, 08 Apr 2021 14:39:45 +0000</lastBuildDate><atom:link href="https://bayareageek.cn/tags/%E5%9E%83%E5%9C%BE%E5%9B%9E%E6%94%B6%E5%99%A8/index.xml" rel="self" type="application/rss+xml" />
     <item>
       <title>Java 虚拟机原理 (六) ZGC 垃圾收集器</title>
-      <link>https://bayareageek.github.io/post/java-%E8%99%9A%E6%8B%9F%E6%9C%BA%E5%8E%9F%E7%90%86-6-zgc-%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86%E5%99%A8/</link>
+      <link>https://bayareageek.cn/post/java-%E8%99%9A%E6%8B%9F%E6%9C%BA%E5%8E%9F%E7%90%86-6-zgc-%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86%E5%99%A8/</link>
       <pubDate>Thu, 08 Apr 2021 14:39:45 +0000</pubDate>
       
-      <guid>https://bayareageek.github.io/post/java-%E8%99%9A%E6%8B%9F%E6%9C%BA%E5%8E%9F%E7%90%86-6-zgc-%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86%E5%99%A8/</guid>
+      <guid>https://bayareageek.cn/post/java-%E8%99%9A%E6%8B%9F%E6%9C%BA%E5%8E%9F%E7%90%86-6-zgc-%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86%E5%99%A8/</guid>
       <description>&lt;p&gt;ZGC 是 JVM 生态最新最先进的一款垃圾收集器，具有可扩展低延迟高吞吐量等特性，其设计目标包括：&lt;/p&gt;
 &lt;ul&gt;
 &lt;li&gt;亚毫秒级停顿时间（ &amp;lt;= 10ms)；&lt;/li&gt;
@@ -23,19 +23,19 @@
     
     <item>
       <title>Java 虚拟机原理 (五) G1垃圾收集器深入</title>
-      <link>https://bayareageek.github.io/post/java-%E8%99%9A%E6%8B%9F%E6%9C%BA%E5%8E%9F%E7%90%86-5-g1%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86%E5%99%A8%E6%B7%B1%E5%85%A5/</link>
+      <link>https://bayareageek.cn/post/java-%E8%99%9A%E6%8B%9F%E6%9C%BA%E5%8E%9F%E7%90%86-5-g1%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86%E5%99%A8%E6%B7%B1%E5%85%A5/</link>
       <pubDate>Mon, 11 Jan 2021 01:00:07 +0000</pubDate>
       
-      <guid>https://bayareageek.github.io/post/java-%E8%99%9A%E6%8B%9F%E6%9C%BA%E5%8E%9F%E7%90%86-5-g1%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86%E5%99%A8%E6%B7%B1%E5%85%A5/</guid>
+      <guid>https://bayareageek.cn/post/java-%E8%99%9A%E6%8B%9F%E6%9C%BA%E5%8E%9F%E7%90%86-5-g1%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86%E5%99%A8%E6%B7%B1%E5%85%A5/</guid>
       <description>&lt;p&gt;深入了解G1垃圾收集器背后的核心原理。&lt;/p&gt;</description>
     </item>
     
     <item>
       <title>Java 虚拟机原理 (四) G1垃圾收集器入门</title>
-      <link>https://bayareageek.github.io/post/java-%E8%99%9A%E6%8B%9F%E6%9C%BA%E5%8E%9F%E7%90%86-4-g1%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86%E5%99%A8%E5%85%A5%E9%97%A8/</link>
+      <link>https://bayareageek.cn/post/java-%E8%99%9A%E6%8B%9F%E6%9C%BA%E5%8E%9F%E7%90%86-4-g1%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86%E5%99%A8%E5%85%A5%E9%97%A8/</link>
       <pubDate>Sun, 10 Jan 2021 21:40:07 +0000</pubDate>
       
-      <guid>https://bayareageek.github.io/post/java-%E8%99%9A%E6%8B%9F%E6%9C%BA%E5%8E%9F%E7%90%86-4-g1%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86%E5%99%A8%E5%85%A5%E9%97%A8/</guid>
+      <guid>https://bayareageek.cn/post/java-%E8%99%9A%E6%8B%9F%E6%9C%BA%E5%8E%9F%E7%90%86-4-g1%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86%E5%99%A8%E5%85%A5%E9%97%A8/</guid>
       <description>&lt;p&gt;本文翻译自&lt;a href=&#34;https://www.oracle.com/webfolder/technetwork/tutorials/obe/java/G1GettingStarted/index.html&#34;&gt;《Getting Started with the G1 Garbage Collector》&lt;/a&gt;&lt;/p&gt;</description>
     </item>
     

@@ -7,17 +7,17 @@
 {  
   "@context":"http://schema.org",
   "@type":"Website",
-  "@id":"https:\/\/bayareageek.github.io\/",
+  "@id":"https:\/\/bayareageek.cn\/",
   "author": {
     "@type": "Person",
     "name": "湾区极客",
     
-    "image": "https://bayareageek.github.io/images/advar.jpg"
+    "image": "https://bayareageek.cn/images/advar.jpg"
     
   },
   "name":"",
   "description":"\u003cp\u003eJava 虚拟机技术是每个 Java 开发工程师都应该深入掌握的。本系列文章将深入介绍 JVM 相关技术，主要包括内存划分、对象创建回收与分配以及垃圾收集三大部分。本系列文章将力求全面概要地汇总核心知识点，并使知识点串联成面，以方便学习、工作以及备忘复习。本文将介绍第三部分——垃圾收集。\u003c\/p\u003e",
-  "url":"https:\/\/bayareageek.github.io\/post\/java-%E8%99%9A%E6%8B%9F%E6%9C%BA%E5%8E%9F%E7%90%86-3-%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86\/",
+  "url":"https:\/\/bayareageek.cn\/post\/java-%E8%99%9A%E6%8B%9F%E6%9C%BA%E5%8E%9F%E7%90%86-3-%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86\/",
   "keywords":"[Java, 技术, 生活]"
 }
 
@@ -35,8 +35,8 @@
 <meta property="og:type" content="article">
 <meta property="og:title" content="Java 虚拟机原理 (三) 垃圾收集">
 <meta name="twitter:title" content="Java 虚拟机原理 (三) 垃圾收集">
-<meta property="og:url" content="https://bayareageek.github.io/post/java-%E8%99%9A%E6%8B%9F%E6%9C%BA%E5%8E%9F%E7%90%86-3-%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86/">
-<meta property="twitter:url" content="https://bayareageek.github.io/post/java-%E8%99%9A%E6%8B%9F%E6%9C%BA%E5%8E%9F%E7%90%86-3-%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86/">
+<meta property="og:url" content="https://bayareageek.cn/post/java-%E8%99%9A%E6%8B%9F%E6%9C%BA%E5%8E%9F%E7%90%86-3-%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86/">
+<meta property="twitter:url" content="https://bayareageek.cn/post/java-%E8%99%9A%E6%8B%9F%E6%9C%BA%E5%8E%9F%E7%90%86-3-%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86/">
 <meta property="og:site_name" content="">
 <meta property="og:description" content="Java 虚拟机技术是每个 Java 开发工程师都应该深入掌握的。本系列文章将深入介绍 JVM 相关技术，主要包括内存划分、对象创建回收与分配以及垃圾收集三大部分。本系列文章将力求全面概要地汇总核心知识点，并使知识点串联成面，以方便学习、工作以及备忘复习。本文将介绍第三部分——垃圾收集。">
 <meta name="twitter:description" content="Java 虚拟机技术是每个 Java 开发工程师都应该深入掌握的。本系列文章将深入介绍 JVM 相关技术，主要包括内存划分、对象创建回收与分配以及垃圾收集三大部分。本系列文章将力求全面概要地汇总核心知识点，并使知识点串联成面，以方便学习、工作以及备忘复习。本文将介绍第三部分——垃圾收集。">
@@ -73,8 +73,8 @@
 
 
 
-  <meta property="og:image" content="https://bayareageek.github.io/images/advar.jpg">
-  <meta property="twitter:image" content="https://bayareageek.github.io/images/advar.jpg">
+  <meta property="og:image" content="https://bayareageek.cn/images/advar.jpg">
+  <meta property="twitter:image" content="https://bayareageek.cn/images/advar.jpg">
 
 
 
@@ -86,12 +86,12 @@
 
     <title>Java 虚拟机原理 (三) 垃圾收集</title>
 
-    <link rel="icon" href="https://bayareageek.github.io/favicon.png">
+    <link rel="icon" href="https://bayareageek.cn/favicon.png">
     
 
     
 
-    <link rel="canonical" href="https://bayareageek.github.io/post/java-%E8%99%9A%E6%8B%9F%E6%9C%BA%E5%8E%9F%E7%90%86-3-%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86/">
+    <link rel="canonical" href="https://bayareageek.cn/post/java-%E8%99%9A%E6%8B%9F%E6%9C%BA%E5%8E%9F%E7%90%86-3-%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86/">
 
     
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" integrity="sha512-iBBXm8fW90+nuLcSKlbmrPcLa0OT92xO1BIsZ+ywDWZCvqsWgccV3gFoRBv0z+8dLJgyAHIhR35VZc2oM/gI1w==" crossorigin="anonymous" referrerpolicy="no-referrer" />
@@ -101,7 +101,7 @@
     
     
     
-    <link rel="stylesheet" href="https://bayareageek.github.io/css/style-2w2urpokyukbsouppglitcyxngrsa0pcm58rrm5mqo3ieqo6bkvr3cz9nvf.min.css" />
+    <link rel="stylesheet" href="https://bayareageek.cn/css/style-2w2urpokyukbsouppglitcyxngrsa0pcm58rrm5mqo3ieqo6bkvr3cz9nvf.min.css" />
     
     
 
@@ -116,17 +116,17 @@
       <header id="header" data-behavior="5">
   <i id="btn-open-sidebar" class="fa fa-lg fa-bars"></i>
   <div class="header-title">
-    <a class="header-title-link" href="https://bayareageek.github.io/" aria-label="去首页"></a>
+    <a class="header-title-link" href="https://bayareageek.cn/" aria-label="去首页"></a>
   </div>
   
     
       <a class="header-right-picture "
-         href="https://bayareageek.github.io/#about" aria-label="打开链接: /#about">
+         href="https://bayareageek.cn/#about" aria-label="打开链接: /#about">
     
     
     
       
-        <img class="header-picture" src="https://bayareageek.github.io/images/advar.jpg" alt="作者的图片" />
+        <img class="header-picture" src="https://bayareageek.cn/images/advar.jpg" alt="作者的图片" />
       
     
     </a>
@@ -137,8 +137,8 @@
   <div class="sidebar-container">
     
       <div class="sidebar-profile">
-        <a href="https://bayareageek.github.io/#about" aria-label="阅读有关作者的更多信息">
-          <img class="sidebar-profile-picture" src="https://bayareageek.github.io/images/advar.jpg" alt="作者的图片" />
+        <a href="https://bayareageek.cn/#about" aria-label="阅读有关作者的更多信息">
+          <img class="sidebar-profile-picture" src="https://bayareageek.cn/images/advar.jpg" alt="作者的图片" />
         </a>
         <h4 class="sidebar-profile-name">湾区极客</h4>
         
@@ -150,7 +150,7 @@
       
   <li class="sidebar-button">
     
-      <a class="sidebar-button-link " href="https://bayareageek.github.io/" title="Home">
+      <a class="sidebar-button-link " href="https://bayareageek.cn/" title="Home">
     
       <i class="sidebar-button-icon fas fa-lg fa-home" aria-hidden="true"></i>
       
@@ -160,7 +160,7 @@
 
   <li class="sidebar-button">
     
-      <a class="sidebar-button-link " href="https://bayareageek.github.io/categories" title="Categories">
+      <a class="sidebar-button-link " href="https://bayareageek.cn/categories" title="Categories">
     
       <i class="sidebar-button-icon fas fa-lg fa-bookmark" aria-hidden="true"></i>
       
@@ -170,7 +170,7 @@
 
   <li class="sidebar-button">
     
-      <a class="sidebar-button-link " href="https://bayareageek.github.io/tags" title="Tags">
+      <a class="sidebar-button-link " href="https://bayareageek.cn/tags" title="Tags">
     
       <i class="sidebar-button-icon fas fa-lg fa-tags" aria-hidden="true"></i>
       
@@ -180,7 +180,7 @@
 
   <li class="sidebar-button">
     
-      <a class="sidebar-button-link " href="https://bayareageek.github.io/archives" title="Archives">
+      <a class="sidebar-button-link " href="https://bayareageek.cn/archives" title="Archives">
     
       <i class="sidebar-button-icon fas fa-lg fa-archive" aria-hidden="true"></i>
       
@@ -190,7 +190,7 @@
 
   <li class="sidebar-button">
     
-      <a class="sidebar-button-link " href="https://bayareageek.github.io/#about" title="About">
+      <a class="sidebar-button-link " href="https://bayareageek.cn/#about" title="About">
     
       <i class="sidebar-button-icon fas fa-lg fa-question" aria-hidden="true"></i>
       
@@ -218,7 +218,7 @@
       
   <li class="sidebar-button">
     
-      <a class="sidebar-button-link " href="https://bayareageek.github.io/index.xml" title="RSS">
+      <a class="sidebar-button-link " href="https://bayareageek.cn/index.xml" title="RSS">
     
       <i class="sidebar-button-icon fas fa-lg fa-rss" aria-hidden="true"></i>
       
@@ -265,7 +265,7 @@
   
     <span>发布在</span>
     
-      <a class="category-link" href="https://bayareageek.github.io/categories/java">Java</a>
+      <a class="category-link" href="https://bayareageek.cn/categories/java">Java</a>
     
   
 
@@ -832,11 +832,11 @@
                   <div class="post-footer-tags">
                     <span class="text-color-light text-small">标签</span><br/>
                     
-  <a class="tag tag--primary tag--small" href="https://bayareageek.github.io/tags/java/">Java</a>
+  <a class="tag tag--primary tag--small" href="https://bayareageek.cn/tags/java/">Java</a>
 
-  <a class="tag tag--primary tag--small" href="https://bayareageek.github.io/tags/jvm/">JVM</a>
+  <a class="tag tag--primary tag--small" href="https://bayareageek.cn/tags/jvm/">JVM</a>
 
-  <a class="tag tag--primary tag--small" href="https://bayareageek.github.io/tags/%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86%E5%99%A8/">垃圾收集器</a>
+  <a class="tag tag--primary tag--small" href="https://bayareageek.cn/tags/%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86%E5%99%A8/">垃圾收集器</a>
 
                   </div>
                 
@@ -849,7 +849,7 @@
           
             <li class="post-action">
               
-                <a class="post-action-btn btn btn--default tooltip--top" href="https://bayareageek.github.io/post/java-%E8%99%9A%E6%8B%9F%E6%9C%BA%E5%8E%9F%E7%90%86-4-g1%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86%E5%99%A8%E5%85%A5%E9%97%A8/" data-tooltip="Java 虚拟机原理 (四) G1垃圾收集器入门" aria-label="下一篇: Java 虚拟机原理 (四) G1垃圾收集器入门">
+                <a class="post-action-btn btn btn--default tooltip--top" href="https://bayareageek.cn/post/java-%E8%99%9A%E6%8B%9F%E6%9C%BA%E5%8E%9F%E7%90%86-4-g1%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86%E5%99%A8%E5%85%A5%E9%97%A8/" data-tooltip="Java 虚拟机原理 (四) G1垃圾收集器入门" aria-label="下一篇: Java 虚拟机原理 (四) G1垃圾收集器入门">
               
                   <i class="fa fa-angle-left"></i>
                   <span class="hide-xs hide-sm text-small icon-ml">下一篇</span>
@@ -857,7 +857,7 @@
             </li>
             <li class="post-action">
               
-                <a class="post-action-btn btn btn--default tooltip--top" href="https://bayareageek.github.io/post/java-%E8%99%9A%E6%8B%9F%E6%9C%BA%E5%8E%9F%E7%90%86-2-%E5%AF%B9%E8%B1%A1%E5%88%9B%E5%BB%BA%E5%92%8C%E5%9B%9E%E6%94%B6/" data-tooltip="Java 虚拟机原理 (二) 对象创建与回收" aria-label="上一篇: Java 虚拟机原理 (二) 对象创建与回收">
+                <a class="post-action-btn btn btn--default tooltip--top" href="https://bayareageek.cn/post/java-%E8%99%9A%E6%8B%9F%E6%9C%BA%E5%8E%9F%E7%90%86-2-%E5%AF%B9%E8%B1%A1%E5%88%9B%E5%BB%BA%E5%92%8C%E5%9B%9E%E6%94%B6/" data-tooltip="Java 虚拟机原理 (二) 对象创建与回收" aria-label="上一篇: Java 虚拟机原理 (二) 对象创建与回收">
               
                   <span class="hide-xs hide-sm text-small icon-mr">上一篇</span>
                   <i class="fa fa-angle-right"></i>
@@ -875,19 +875,19 @@
         </li>
         
           <li class="post-action hide-xs">
-            <a class="post-action-btn btn btn--default" target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://bayareageek.github.io/post/java-%E8%99%9A%E6%8B%9F%E6%9C%BA%E5%8E%9F%E7%90%86-3-%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86/" title="分享到 %s Facebook" aria-label="分享到 %s Facebook">
+            <a class="post-action-btn btn btn--default" target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://bayareageek.cn/post/java-%E8%99%9A%E6%8B%9F%E6%9C%BA%E5%8E%9F%E7%90%86-3-%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86/" title="分享到 %s Facebook" aria-label="分享到 %s Facebook">
               <i class="fab fa-facebook-square" aria-hidden="true"></i>
             </a>
           </li>
         
           <li class="post-action hide-xs">
-            <a class="post-action-btn btn btn--default" target="new" href="https://twitter.com/intent/tweet?text=https://bayareageek.github.io/post/java-%E8%99%9A%E6%8B%9F%E6%9C%BA%E5%8E%9F%E7%90%86-3-%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86/" title="分享到 %s Twitter" aria-label="分享到 %s Twitter">
+            <a class="post-action-btn btn btn--default" target="new" href="https://twitter.com/intent/tweet?text=https://bayareageek.cn/post/java-%E8%99%9A%E6%8B%9F%E6%9C%BA%E5%8E%9F%E7%90%86-3-%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86/" title="分享到 %s Twitter" aria-label="分享到 %s Twitter">
               <i class="fab fa-twitter" aria-hidden="true"></i>
             </a>
           </li>
         
           <li class="post-action hide-xs">
-            <a class="post-action-btn btn btn--default" target="new" href="https://plus.google.com/share?url=https://bayareageek.github.io/post/java-%E8%99%9A%E6%8B%9F%E6%9C%BA%E5%8E%9F%E7%90%86-3-%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86/" title="分享到 %s Google&#43;" aria-label="分享到 %s Google&#43;">
+            <a class="post-action-btn btn btn--default" target="new" href="https://plus.google.com/share?url=https://bayareageek.cn/post/java-%E8%99%9A%E6%8B%9F%E6%9C%BA%E5%8E%9F%E7%90%86-3-%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86/" title="分享到 %s Google&#43;" aria-label="分享到 %s Google&#43;">
               <i class="fab fa-google-plus" aria-hidden="true"></i>
             </a>
           </li>
@@ -954,7 +954,7 @@
           
             <li class="post-action">
               
-                <a class="post-action-btn btn btn--default tooltip--top" href="https://bayareageek.github.io/post/java-%E8%99%9A%E6%8B%9F%E6%9C%BA%E5%8E%9F%E7%90%86-4-g1%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86%E5%99%A8%E5%85%A5%E9%97%A8/" data-tooltip="Java 虚拟机原理 (四) G1垃圾收集器入门" aria-label="下一篇: Java 虚拟机原理 (四) G1垃圾收集器入门">
+                <a class="post-action-btn btn btn--default tooltip--top" href="https://bayareageek.cn/post/java-%E8%99%9A%E6%8B%9F%E6%9C%BA%E5%8E%9F%E7%90%86-4-g1%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86%E5%99%A8%E5%85%A5%E9%97%A8/" data-tooltip="Java 虚拟机原理 (四) G1垃圾收集器入门" aria-label="下一篇: Java 虚拟机原理 (四) G1垃圾收集器入门">
               
                   <i class="fa fa-angle-left"></i>
                   <span class="hide-xs hide-sm text-small icon-ml">下一篇</span>
@@ -962,7 +962,7 @@
             </li>
             <li class="post-action">
               
-                <a class="post-action-btn btn btn--default tooltip--top" href="https://bayareageek.github.io/post/java-%E8%99%9A%E6%8B%9F%E6%9C%BA%E5%8E%9F%E7%90%86-2-%E5%AF%B9%E8%B1%A1%E5%88%9B%E5%BB%BA%E5%92%8C%E5%9B%9E%E6%94%B6/" data-tooltip="Java 虚拟机原理 (二) 对象创建与回收" aria-label="上一篇: Java 虚拟机原理 (二) 对象创建与回收">
+                <a class="post-action-btn btn btn--default tooltip--top" href="https://bayareageek.cn/post/java-%E8%99%9A%E6%8B%9F%E6%9C%BA%E5%8E%9F%E7%90%86-2-%E5%AF%B9%E8%B1%A1%E5%88%9B%E5%BB%BA%E5%92%8C%E5%9B%9E%E6%94%B6/" data-tooltip="Java 虚拟机原理 (二) 对象创建与回收" aria-label="上一篇: Java 虚拟机原理 (二) 对象创建与回收">
               
                   <span class="hide-xs hide-sm text-small icon-mr">上一篇</span>
                   <i class="fa fa-angle-right"></i>
@@ -980,19 +980,19 @@
         </li>
         
           <li class="post-action hide-xs">
-            <a class="post-action-btn btn btn--default" target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://bayareageek.github.io/post/java-%E8%99%9A%E6%8B%9F%E6%9C%BA%E5%8E%9F%E7%90%86-3-%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86/" title="分享到 %s Facebook" aria-label="分享到 %s Facebook">
+            <a class="post-action-btn btn btn--default" target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://bayareageek.cn/post/java-%E8%99%9A%E6%8B%9F%E6%9C%BA%E5%8E%9F%E7%90%86-3-%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86/" title="分享到 %s Facebook" aria-label="分享到 %s Facebook">
               <i class="fab fa-facebook-square" aria-hidden="true"></i>
             </a>
           </li>
         
           <li class="post-action hide-xs">
-            <a class="post-action-btn btn btn--default" target="new" href="https://twitter.com/intent/tweet?text=https://bayareageek.github.io/post/java-%E8%99%9A%E6%8B%9F%E6%9C%BA%E5%8E%9F%E7%90%86-3-%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86/" title="分享到 %s Twitter" aria-label="分享到 %s Twitter">
+            <a class="post-action-btn btn btn--default" target="new" href="https://twitter.com/intent/tweet?text=https://bayareageek.cn/post/java-%E8%99%9A%E6%8B%9F%E6%9C%BA%E5%8E%9F%E7%90%86-3-%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86/" title="分享到 %s Twitter" aria-label="分享到 %s Twitter">
               <i class="fab fa-twitter" aria-hidden="true"></i>
             </a>
           </li>
         
           <li class="post-action hide-xs">
-            <a class="post-action-btn btn btn--default" target="new" href="https://plus.google.com/share?url=https://bayareageek.github.io/post/java-%E8%99%9A%E6%8B%9F%E6%9C%BA%E5%8E%9F%E7%90%86-3-%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86/" title="分享到 %s Google&#43;" aria-label="分享到 %s Google&#43;">
+            <a class="post-action-btn btn btn--default" target="new" href="https://plus.google.com/share?url=https://bayareageek.cn/post/java-%E8%99%9A%E6%8B%9F%E6%9C%BA%E5%8E%9F%E7%90%86-3-%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86/" title="分享到 %s Google&#43;" aria-label="分享到 %s Google&#43;">
               <i class="fab fa-google-plus" aria-hidden="true"></i>
             </a>
           </li>
@@ -1023,19 +1023,19 @@
   <ul class="share-options">
     
       <li class="share-option">
-        <a class="share-option-btn" target="new" href="https://www.facebook.com/sharer/sharer.php?u=https%3A%2F%2Fbayareageek.github.io%2Fpost%2Fjava-%25E8%2599%259A%25E6%258B%259F%25E6%259C%25BA%25E5%258E%259F%25E7%2590%2586-3-%25E5%259E%2583%25E5%259C%25BE%25E6%2594%25B6%25E9%259B%2586%2F" aria-label="分享到 %s Facebook">
+        <a class="share-option-btn" target="new" href="https://www.facebook.com/sharer/sharer.php?u=https%3A%2F%2Fbayareageek.cn%2Fpost%2Fjava-%25E8%2599%259A%25E6%258B%259F%25E6%259C%25BA%25E5%258E%259F%25E7%2590%2586-3-%25E5%259E%2583%25E5%259C%25BE%25E6%2594%25B6%25E9%259B%2586%2F" aria-label="分享到 %s Facebook">
           <i class="fab fa-facebook-square" aria-hidden="true"></i><span>分享到 Facebook</span>
         </a>
       </li>
     
       <li class="share-option">
-        <a class="share-option-btn" target="new" href="https://twitter.com/intent/tweet?text=https%3A%2F%2Fbayareageek.github.io%2Fpost%2Fjava-%25E8%2599%259A%25E6%258B%259F%25E6%259C%25BA%25E5%258E%259F%25E7%2590%2586-3-%25E5%259E%2583%25E5%259C%25BE%25E6%2594%25B6%25E9%259B%2586%2F" aria-label="分享到 %s Twitter">
+        <a class="share-option-btn" target="new" href="https://twitter.com/intent/tweet?text=https%3A%2F%2Fbayareageek.cn%2Fpost%2Fjava-%25E8%2599%259A%25E6%258B%259F%25E6%259C%25BA%25E5%258E%259F%25E7%2590%2586-3-%25E5%259E%2583%25E5%259C%25BE%25E6%2594%25B6%25E9%259B%2586%2F" aria-label="分享到 %s Twitter">
           <i class="fab fa-twitter" aria-hidden="true"></i><span>分享到 Twitter</span>
         </a>
       </li>
     
       <li class="share-option">
-        <a class="share-option-btn" target="new" href="https://plus.google.com/share?url=https%3A%2F%2Fbayareageek.github.io%2Fpost%2Fjava-%25E8%2599%259A%25E6%258B%259F%25E6%259C%25BA%25E5%258E%259F%25E7%2590%2586-3-%25E5%259E%2583%25E5%259C%25BE%25E6%2594%25B6%25E9%259B%2586%2F" aria-label="分享到 %s Google&#43;">
+        <a class="share-option-btn" target="new" href="https://plus.google.com/share?url=https%3A%2F%2Fbayareageek.cn%2Fpost%2Fjava-%25E8%2599%259A%25E6%258B%259F%25E6%259C%25BA%25E5%258E%259F%25E7%2590%2586-3-%25E5%259E%2583%25E5%259C%25BE%25E6%2594%25B6%25E9%259B%2586%2F" aria-label="分享到 %s Google&#43;">
           <i class="fab fa-google-plus" aria-hidden="true"></i><span>分享到 Google&#43;</span>
         </a>
       </li>
@@ -1052,7 +1052,7 @@
       <i class="fa fa-times"></i>
     </div>
     
-      <img id="about-card-picture" src="https://bayareageek.github.io/images/advar.jpg" alt="作者的图片" />
+      <img id="about-card-picture" src="https://bayareageek.cn/images/advar.jpg" alt="作者的图片" />
     
     <h4 id="about-card-name">湾区极客</h4>
     
@@ -1080,7 +1080,7 @@
     
   
     
-      <div id="cover" style="background-image:url('https://bayareageek.github.io/images/cover/program-cover.jpg');"></div>
+      <div id="cover" style="background-image:url('https://bayareageek.cn/images/cover/program-cover.jpg');"></div>
     
   
 
@@ -1093,7 +1093,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/fancybox/3.5.7/jquery.fancybox.min.js" integrity="sha512-uURl+ZXMBrF4AwGaWmEetzrd+J5/8NRkWAvJx5sbPSSuOb0bZLqf+tOzniObO00BjHa/dD7gub9oCGMLPQHtQA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 
 
-<script src="https://bayareageek.github.io/js/script-8lglxdix2nqhalxxm2bujhkcc8cctdrd5o5axonwhfzx2zqrer5facyn8.min.js"></script>
+<script src="https://bayareageek.cn/js/script-8lglxdix2nqhalxxm2bujhkcc8cctdrd5o5axonwhfzx2zqrer5facyn8.min.js"></script>
 
 
   

@@ -2,17 +2,17 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>Categories on </title>
-    <link>https://bayareageek.github.io/categories/</link>
+    <link>https://bayareageek.cn/categories/</link>
     <description>Recent content in Categories on </description>
     <generator>Hugo -- gohugo.io</generator>
     <language>zh-cn</language>
-    <lastBuildDate>Thu, 08 Apr 2021 14:39:45 +0000</lastBuildDate><atom:link href="https://bayareageek.github.io/categories/index.xml" rel="self" type="application/rss+xml" />
+    <lastBuildDate>Thu, 08 Apr 2021 14:39:45 +0000</lastBuildDate><atom:link href="https://bayareageek.cn/categories/index.xml" rel="self" type="application/rss+xml" />
     <item>
       <title>Java</title>
-      <link>https://bayareageek.github.io/categories/java/</link>
+      <link>https://bayareageek.cn/categories/java/</link>
       <pubDate>Thu, 08 Apr 2021 14:39:45 +0000</pubDate>
       
-      <guid>https://bayareageek.github.io/categories/java/</guid>
+      <guid>https://bayareageek.cn/categories/java/</guid>
       <description></description>
     </item>
     
