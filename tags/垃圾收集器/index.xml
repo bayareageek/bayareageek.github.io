@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>垃圾收集器 on </title>
+    <link>https://bayareageek.github.io/tags/%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86%E5%99%A8/</link>
+    <description>Recent content in 垃圾收集器 on </description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh-cn</language>
+    <lastBuildDate>Sat, 09 Jan 2021 22:50:07 +0000</lastBuildDate><atom:link href="https://bayareageek.github.io/tags/%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86%E5%99%A8/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Java 虚拟机原理 (三) 垃圾收集</title>
+      <link>https://bayareageek.github.io/post/java-%E8%99%9A%E6%8B%9F%E6%9C%BA%E5%8E%9F%E7%90%86-3-%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86/</link>
+      <pubDate>Sat, 09 Jan 2021 22:50:07 +0000</pubDate>
+      
+      <guid>https://bayareageek.github.io/post/java-%E8%99%9A%E6%8B%9F%E6%9C%BA%E5%8E%9F%E7%90%86-3-%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86/</guid>
+      <description>&lt;p&gt;Java 虚拟机技术是每个 Java 开发工程师都应该深入掌握的。本系列文章将深入介绍 JVM 相关技术，主要包括内存划分、对象创建回收与分配以及垃圾收集三大部分。本系列文章将力求全面概要地汇总核心知识点，并使知识点串联成面，以方便学习、工作以及备忘复习。本文将介绍第三部分——垃圾收集。&lt;/p&gt;</description>
+    </item>
+    
+  </channel>
+</rss>

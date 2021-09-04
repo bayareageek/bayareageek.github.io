@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+  <head>
+    
+    <script type="application/ld+json">
+
+{  
+  "@context":"http://schema.org",
+  "@type":"Website",
+  "@id":"https:\/\/bayareageek.github.io\/",
+  "author": {
+    "@type": "Person",
+    "name": "湾区极客",
+    
+    "image": "https://bayareageek.github.io/images/advar.jpg"
+    
+  },
+  "name":"",
+  "description":"\u003cp\u003eJava 虚拟机技术是每个 Java 开发工程师都应该深入掌握的。本系列文章将深入介绍 JVM 相关技术，主要包括内存划分、对象创建回收与分配以及垃圾收集三大部分。本系列文章将力求全面概要地汇总核心知识点，并使知识点串联成面，以方便学习、工作以及备忘复习。本文将介绍第一部分:内存划分。\u003c\/p\u003e",
+  "url":"https:\/\/bayareageek.github.io\/post\/java-%E8%99%9A%E6%8B%9F%E6%9C%BA%E5%8E%9F%E7%90%86-1-%E5%86%85%E5%AD%98%E5%88%92%E5%88%86\/",
+  "keywords":"[Java, 技术, 生活]"
+}
+
+</script>
+    <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="generator" content="Hugo 0.80.0 with theme Tranquilpeak 0.5.1-BETA">
+<meta name="author" content="湾区极客">
+<meta name="keywords" content="Java, 技术, 生活">
+<meta name="description" content="Java 虚拟机技术是每个 Java 开发工程师都应该深入掌握的。本系列文章将深入介绍 JVM 相关技术，主要包括内存划分、对象创建回收与分配以及垃圾收集三大部分。本系列文章将力求全面概要地汇总核心知识点，并使知识点串联成面，以方便学习、工作以及备忘复习。本文将介绍第一部分:内存划分。">
+
+
+<meta property="og:description" content="Java 虚拟机技术是每个 Java 开发工程师都应该深入掌握的。本系列文章将深入介绍 JVM 相关技术，主要包括内存划分、对象创建回收与分配以及垃圾收集三大部分。本系列文章将力求全面概要地汇总核心知识点，并使知识点串联成面，以方便学习、工作以及备忘复习。本文将介绍第一部分:内存划分。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Java 虚拟机原理 (一) 内存划分">
+<meta name="twitter:title" content="Java 虚拟机原理 (一) 内存划分">
+<meta property="og:url" content="https://bayareageek.github.io/post/java-%E8%99%9A%E6%8B%9F%E6%9C%BA%E5%8E%9F%E7%90%86-1-%E5%86%85%E5%AD%98%E5%88%92%E5%88%86/">
+<meta property="twitter:url" content="https://bayareageek.github.io/post/java-%E8%99%9A%E6%8B%9F%E6%9C%BA%E5%8E%9F%E7%90%86-1-%E5%86%85%E5%AD%98%E5%88%92%E5%88%86/">
+<meta property="og:site_name" content="">
+<meta property="og:description" content="Java 虚拟机技术是每个 Java 开发工程师都应该深入掌握的。本系列文章将深入介绍 JVM 相关技术，主要包括内存划分、对象创建回收与分配以及垃圾收集三大部分。本系列文章将力求全面概要地汇总核心知识点，并使知识点串联成面，以方便学习、工作以及备忘复习。本文将介绍第一部分:内存划分。">
+<meta name="twitter:description" content="Java 虚拟机技术是每个 Java 开发工程师都应该深入掌握的。本系列文章将深入介绍 JVM 相关技术，主要包括内存划分、对象创建回收与分配以及垃圾收集三大部分。本系列文章将力求全面概要地汇总核心知识点，并使知识点串联成面，以方便学习、工作以及备忘复习。本文将介绍第一部分:内存划分。">
+<meta property="og:locale" content="zh-cn">
+
+  
+    <meta property="article:published_time" content="2021-01-07T22:56:07">
+  
+  
+    <meta property="article:modified_time" content="2021-01-07T22:56:07">
+  
+  
+  
+    
+      <meta property="article:section" content="Java">
+    
+  
+  
+    
+      <meta property="article:tag" content="Java">
+    
+      <meta property="article:tag" content="JVM">
+    
+  
+
+
+<meta name="twitter:card" content="summary">
+
+
+
+
+
+
+
+  <meta property="og:image" content="https://bayareageek.github.io/images/advar.jpg">
+  <meta property="twitter:image" content="https://bayareageek.github.io/images/advar.jpg">
+
+
+
+
+
+  <meta property="og:image" content="https://pic-bed-sz.oss-cn-shenzhen.aliyuncs.com/blog%2FJava%20%E8%99%9A%E6%8B%9F%E6%9C%BA%E5%8E%9F%E7%90%86%E4%B9%8B%E5%86%85%E5%AD%98%E5%88%92%E5%88%86%2FJVM%20%E5%86%85%E5%AD%98%E6%A8%A1%E5%9E%8B%E6%80%9D%E7%BB%B4%E5%AF%BC%E5%9B%BE.png">
+  <meta property="twitter:image" content="https://pic-bed-sz.oss-cn-shenzhen.aliyuncs.com/blog%2FJava%20%E8%99%9A%E6%8B%9F%E6%9C%BA%E5%8E%9F%E7%90%86%E4%B9%8B%E5%86%85%E5%AD%98%E5%88%92%E5%88%86%2FJVM%20%E5%86%85%E5%AD%98%E6%A8%A1%E5%9E%8B%E6%80%9D%E7%BB%B4%E5%AF%BC%E5%9B%BE.png">
+
+
+    <title>Java 虚拟机原理 (一) 内存划分</title>
+
+    <link rel="icon" href="https://bayareageek.github.io/favicon.png">
+    
+
+    
+
+    <link rel="canonical" href="https://bayareageek.github.io/post/java-%E8%99%9A%E6%8B%9F%E6%9C%BA%E5%8E%9F%E7%90%86-1-%E5%86%85%E5%AD%98%E5%88%92%E5%88%86/">
+
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" integrity="sha512-iBBXm8fW90+nuLcSKlbmrPcLa0OT92xO1BIsZ+ywDWZCvqsWgccV3gFoRBv0z+8dLJgyAHIhR35VZc2oM/gI1w==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/fancybox/3.5.7/jquery.fancybox.min.css" integrity="sha512-H9jrZiiopUdsLpg94A333EfumgUBpO9MdbxStdeITo+KEIMaNfHNvwyjjDJb+ERPaRS6DpyRlKbvPUasNItRyw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/gitalk/1.7.2/gitalk.css" integrity="sha512-MLcK/YRapzET1qTBXrOiZE6bGBgtATMo2bIyalVJ8EKDEGNoeA3SPQkvWAR0zNS650YG13ocXBMeioDuZcSRuQ==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    
+    
+    
+    <link rel="stylesheet" href="https://bayareageek.github.io/css/style-2w2urpokyukbsouppglitcyxngrsa0pcm58rrm5mqo3ieqo6bkvr3cz9nvf.min.css" />
+    
+    
+
+    
+      
+    
+    
+  </head>
+
+  <body>
+    <div id="blog">
+      <header id="header" data-behavior="5">
+  <i id="btn-open-sidebar" class="fa fa-lg fa-bars"></i>
+  <div class="header-title">
+    <a class="header-title-link" href="https://bayareageek.github.io/" aria-label="去首页"></a>
+  </div>
+  
+    
+      <a class="header-right-picture "
+         href="https://bayareageek.github.io/#about" aria-label="打开链接: /#about">
+    
+    
+    
+      
+        <img class="header-picture" src="https://bayareageek.github.io/images/advar.jpg" alt="作者的图片" />
+      
+    
+    </a>
+  
+</header>
+
+      <nav id="sidebar" data-behavior="5">
+  <div class="sidebar-container">
+    
+      <div class="sidebar-profile">
+        <a href="https://bayareageek.github.io/#about" aria-label="阅读有关作者的更多信息">
+          <img class="sidebar-profile-picture" src="https://bayareageek.github.io/images/advar.jpg" alt="作者的图片" />
+        </a>
+        <h4 class="sidebar-profile-name">湾区极客</h4>
+        
+          <h5 class="sidebar-profile-bio">大湾区技术极客聚集地</h5>
+        
+      </div>
+    
+    <ul class="sidebar-buttons">
+      
+  <li class="sidebar-button">
+    
+      <a class="sidebar-button-link " href="https://bayareageek.github.io/" title="Home">
+    
+      <i class="sidebar-button-icon fas fa-lg fa-home" aria-hidden="true"></i>
+      
+      <span class="sidebar-button-desc">首页</span>
+    </a>
+  </li>
+
+  <li class="sidebar-button">
+    
+      <a class="sidebar-button-link " href="https://bayareageek.github.io/categories" title="Categories">
+    
+      <i class="sidebar-button-icon fas fa-lg fa-bookmark" aria-hidden="true"></i>
+      
+      <span class="sidebar-button-desc">分类</span>
+    </a>
+  </li>
+
+  <li class="sidebar-button">
+    
+      <a class="sidebar-button-link " href="https://bayareageek.github.io/tags" title="Tags">
+    
+      <i class="sidebar-button-icon fas fa-lg fa-tags" aria-hidden="true"></i>
+      
+      <span class="sidebar-button-desc">标签</span>
+    </a>
+  </li>
+
+  <li class="sidebar-button">
+    
+      <a class="sidebar-button-link " href="https://bayareageek.github.io/archives" title="Archives">
+    
+      <i class="sidebar-button-icon fas fa-lg fa-archive" aria-hidden="true"></i>
+      
+      <span class="sidebar-button-desc">归档</span>
+    </a>
+  </li>
+
+  <li class="sidebar-button">
+    
+      <a class="sidebar-button-link " href="https://bayareageek.github.io/#about" title="About">
+    
+      <i class="sidebar-button-icon fas fa-lg fa-question" aria-hidden="true"></i>
+      
+      <span class="sidebar-button-desc">关于</span>
+    </a>
+  </li>
+
+
+    </ul>
+    <ul class="sidebar-buttons">
+      
+  <li class="sidebar-button">
+    
+      <a class="sidebar-button-link " href="https://github.com/duval1024" target="_blank" rel="noopener" title="GitHub">
+    
+      <i class="sidebar-button-icon fab fa-lg fa-github" aria-hidden="true"></i>
+      
+      <span class="sidebar-button-desc">GitHub</span>
+    </a>
+  </li>
+
+
+    </ul>
+    <ul class="sidebar-buttons">
+      
+  <li class="sidebar-button">
+    
+      <a class="sidebar-button-link " href="https://bayareageek.github.io/index.xml" title="RSS">
+    
+      <i class="sidebar-button-icon fas fa-lg fa-rss" aria-hidden="true"></i>
+      
+      <span class="sidebar-button-desc">RSS</span>
+    </a>
+  </li>
+
+
+    </ul>
+  </div>
+</nav>
+
+      
+
+      <div id="main" data-behavior="5"
+        class="
+               hasCoverMetaIn
+               ">
+        <article class="post">
+          
+          
+            <div class="post-header main-content-wrap text-left">
+  
+    <h1 class="post-title">
+      Java 虚拟机原理 (一) 内存划分
+    </h1>
+  
+  
+  <div class="postShorten-meta post-meta">
+    
+      <time datetime="2021-01-07T22:56:07Z">
+        
+  
+  
+  
+  
+    2021-01-07
+  
+
+      </time>
+    
+    
+  
+  
+    <span>发布在</span>
+    
+      <a class="category-link" href="https://bayareageek.github.io/categories/java">Java</a>
+    
+  
+
+  </div>
+
+</div>
+          
+          <div class="post-content markdown">
+            <div class="main-content-wrap">
+              <p>Java 虚拟机技术是每个 Java 开发工程师都应该深入掌握的。本系列文章将深入介绍 JVM 相关技术，主要包括内存划分、对象创建回收与分配以及垃圾收集三大部分。本系列文章将力求全面概要地汇总核心知识点，并使知识点串联成面，以方便学习、工作以及备忘复习。本文将介绍第一部分:内存划分。</p>
+<p><img src="https://pic-bed-sz.oss-cn-shenzhen.aliyuncs.com/blog%2FJava%20%E8%99%9A%E6%8B%9F%E6%9C%BA%E5%8E%9F%E7%90%86%E4%B9%8B%E5%86%85%E5%AD%98%E5%88%92%E5%88%86%2FJVM%20%E5%86%85%E5%AD%98%E6%A8%A1%E5%9E%8B%E6%80%9D%E7%BB%B4%E5%AF%BC%E5%9B%BE.png" alt="JVM 内存模型思维导图"></p>
+<h2 id="jdk-体系架构">JDK 体系架构</h2>
+<p>先从宏观上来看 JVM 所处的位置，且看官方文档的<a href="https://docs.oracle.com/javase/8/docs/">体系架构图</a>：</p>
+<p><img src="https://pic-bed-sz.oss-cn-shenzhen.aliyuncs.com/blog%2FJava%20%E8%99%9A%E6%8B%9F%E6%9C%BA%E5%8E%9F%E7%90%86%E4%B9%8B%E5%86%85%E5%AD%98%E5%88%92%E5%88%86%2FJDK%E4%BD%93%E7%B3%BB%E6%9E%B6%E6%9E%84%E5%9B%BE.png" alt="JDK体系架构图.png"></p>
+<ul>
+<li>JVM（Java Virtual Machine）：处于整个体系最底层，直接与不同的操作系统打交道，因此针对不同的系统有相应的 JVM 实现。Java 程序正是借助 JVM 实现了“一处编写处处运行“的跨平台能力；</li>
+<li>JRE（Java SE Runtime Environment）：Java 运行时环境，是在 JVM 基础上增加 Java 基础类库。Java 程序可以运行在 JRE 之上；</li>
+<li>JDK（Java SE Development Kit）：Java 开发工具包，是在 JRE 基础上增加了开发 Java 程序所需要的各种工具包。</li>
+</ul>
+<p>因此本系列文章主要探讨最底层的 JVM 底层原理。</p>
+<h2 id="jvm-内存模型">JVM 内存模型</h2>
+<p><img src="https://pic-bed-sz.oss-cn-shenzhen.aliyuncs.com/blog%2FJava%20%E8%99%9A%E6%8B%9F%E6%9C%BA%E5%8E%9F%E7%90%86%E4%B9%8B%E5%86%85%E5%AD%98%E5%88%92%E5%88%86%2FJVM%20%E5%86%85%E5%AD%98%E6%A8%A1%E5%9E%8B%E5%9B%BE.jpg" alt="JVM 内存模型图.jpg"></p>
+<p>上图展示的是以下样例代码的内存模型：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">App</span> <span style="color:#f92672">{</span>
+
+    <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">int</span> <span style="color:#a6e22e">plus</span><span style="color:#f92672">()</span> <span style="color:#f92672">{</span>
+        <span style="color:#66d9ef">int</span> a <span style="color:#f92672">=</span> 1<span style="color:#f92672">;</span>
+        <span style="color:#66d9ef">int</span> b <span style="color:#f92672">=</span> 1<span style="color:#f92672">;</span>
+        <span style="color:#66d9ef">int</span> c <span style="color:#f92672">=</span> a <span style="color:#f92672">+</span> b<span style="color:#f92672">;</span>
+        <span style="color:#66d9ef">return</span> c<span style="color:#f92672">;</span>
+    <span style="color:#f92672">}</span>
+
+    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">main</span><span style="color:#f92672">(</span>String<span style="color:#f92672">[]</span> args<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+        App obj <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> App<span style="color:#f92672">();</span>
+        System<span style="color:#f92672">.</span><span style="color:#a6e22e">out</span><span style="color:#f92672">.</span><span style="color:#a6e22e">println</span><span style="color:#f92672">(</span>obj<span style="color:#f92672">.</span><span style="color:#a6e22e">plus</span><span style="color:#f92672">());</span>
+    <span style="color:#f92672">}</span>
+<span style="color:#f92672">}</span>
+</code></pre></div><p>JVM 运行时数据区域包括以下五部分：</p>
+<ul>
+<li>程序计数器：每个线程都会有独立的程序计数器，用于记录当前程序运行到的位置，以便线程切换时能够恢复到当前运行位置；</li>
+<li>Java 虚拟机栈：即是图中线程内部的 Java 线程栈。每个线程也都拥有自己的线程栈。线程栈遵循先进后出（FILO）原则，内部包含多个栈帧。每一个栈帧由局部变量表、操作数栈、动态链接以及方法出口等构成；</li>
+<li>本地方法栈：与虚拟机栈类似，但保存的是 native 方法调用栈；</li>
+<li>堆：运行时数据区域中最大的一部分，是大部分对象保存的地方。JVM 常常使用分代收集算法回收该区域；</li>
+<li>方法区：JDK8 里变更为元空间（metaspace），直接保存在直接内存中（注意直接内存不属于 JVM 运行时数据区域）。方法区主要保存类信息、运行时常量池、静态变量、即时编译器编译后的代码等数据。</li>
+</ul>
+<p>此外，直接内存也是非常重要一部分内存空间。 JVM 元数据空间以及 Java NIO 等都是用到直接内存。</p>
+<h2 id="jvm-参数">JVM 参数</h2>
+<p>JVM 提供了若干参数来控制上述各个区域的大小，如下图所示：</p>
+<p><img src="https://pic-bed-sz.oss-cn-shenzhen.aliyuncs.com/blog%2FJava%20%E8%99%9A%E6%8B%9F%E6%9C%BA%E5%8E%9F%E7%90%86%E4%B9%8B%E5%86%85%E5%AD%98%E5%88%92%E5%88%86%2FJVM%20%E5%86%85%E5%AD%98%E6%A8%A1%E5%9E%8B%E4%B8%8E%E8%B0%83%E4%BC%98%E5%8F%82%E6%95%B0.jpg" alt="JVM 内存模型与调优参数.jpg"></p>
+<p>配置样例如：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">java -Xmx6g -Xms6g -Xmn3g -Xss512K -XX:+UseConcMarkSweepGC -XX:+UseParNewGC -XX:SurvivorRatio<span style="color:#f92672">=</span><span style="color:#ae81ff">8</span> -XX:MetaspaceSize<span style="color:#f92672">=</span>64m ‐XX:MaxMetaspaceSize<span style="color:#f92672">=</span>128M -jar myapp.jar
+</code></pre></div><p>需要注意，元数据空间在缺省参数的情况下，默认初始大小为21M，如果发生空间不足，会触发 Full GC 进行扩容，且最大扩容空间可为所有的机器内存。所以一定要配置元数据空间参数，且 MetaspaceSize 和 MaxMetaspaceSize 最好相等，从而从根源上杜绝 Full GC 扩容。</p>
+<h2 id="参考资料">参考资料</h2>
+<ul>
+<li><a href="https://juejin.cn/post/6844903592374042637">JVM内存模型</a>：该文将 Java 内存模型介绍得非常具体详细。</li>
+</ul>
+              
+
+            </div>
+          </div>
+          <div id="post-footer" class="post-footer main-content-wrap">
+            
+              
+                
+                
+                  <div class="post-footer-tags">
+                    <span class="text-color-light text-small">标签</span><br/>
+                    
+  <a class="tag tag--primary tag--small" href="https://bayareageek.github.io/tags/java/">Java</a>
+
+  <a class="tag tag--primary tag--small" href="https://bayareageek.github.io/tags/jvm/">JVM</a>
+
+                  </div>
+                
+              
+            
+            <div class="post-actions-wrap">
+  
+      <nav >
+        <ul class="post-actions post-action-nav">
+          
+            <li class="post-action">
+              
+                <a class="post-action-btn btn btn--default tooltip--top" href="https://bayareageek.github.io/post/java-%E8%99%9A%E6%8B%9F%E6%9C%BA%E5%8E%9F%E7%90%86-2-%E5%AF%B9%E8%B1%A1%E5%88%9B%E5%BB%BA%E5%92%8C%E5%9B%9E%E6%94%B6/" data-tooltip="Java 虚拟机原理 (二) 对象创建与回收" aria-label="下一篇: Java 虚拟机原理 (二) 对象创建与回收">
+              
+                  <i class="fa fa-angle-left"></i>
+                  <span class="hide-xs hide-sm text-small icon-ml">下一篇</span>
+                </a>
+            </li>
+            <li class="post-action">
+              
+                <a class="post-action-btn btn btn--disabled">
+              
+                  <span class="hide-xs hide-sm text-small icon-mr">上一篇</span>
+                  <i class="fa fa-angle-right"></i>
+                </a>
+            </li>
+          
+        </ul>
+      </nav>
+    <ul class="post-actions post-action-share" >
+      
+        <li class="post-action hide-lg hide-md hide-sm">
+          <a class="post-action-btn btn btn--default btn-open-shareoptions" href="#btn-open-shareoptions" aria-label="分享这个帖子">
+            <i class="fa fa-share-alt" aria-hidden="true"></i>
+          </a>
+        </li>
+        
+          <li class="post-action hide-xs">
+            <a class="post-action-btn btn btn--default" target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://bayareageek.github.io/post/java-%E8%99%9A%E6%8B%9F%E6%9C%BA%E5%8E%9F%E7%90%86-1-%E5%86%85%E5%AD%98%E5%88%92%E5%88%86/" title="分享到 %s Facebook" aria-label="分享到 %s Facebook">
+              <i class="fab fa-facebook-square" aria-hidden="true"></i>
+            </a>
+          </li>
+        
+          <li class="post-action hide-xs">
+            <a class="post-action-btn btn btn--default" target="new" href="https://twitter.com/intent/tweet?text=https://bayareageek.github.io/post/java-%E8%99%9A%E6%8B%9F%E6%9C%BA%E5%8E%9F%E7%90%86-1-%E5%86%85%E5%AD%98%E5%88%92%E5%88%86/" title="分享到 %s Twitter" aria-label="分享到 %s Twitter">
+              <i class="fab fa-twitter" aria-hidden="true"></i>
+            </a>
+          </li>
+        
+          <li class="post-action hide-xs">
+            <a class="post-action-btn btn btn--default" target="new" href="https://plus.google.com/share?url=https://bayareageek.github.io/post/java-%E8%99%9A%E6%8B%9F%E6%9C%BA%E5%8E%9F%E7%90%86-1-%E5%86%85%E5%AD%98%E5%88%92%E5%88%86/" title="分享到 %s Google&#43;" aria-label="分享到 %s Google&#43;">
+              <i class="fab fa-google-plus" aria-hidden="true"></i>
+            </a>
+          </li>
+        
+      
+      
+        <li class="post-action">
+          <a class="post-action-btn btn btn--default" href="#gitalk" aria-label="发表评论">
+            <i class="fa fa-comment"></i>
+          </a>
+        </li>
+      
+      <li class="post-action">
+        
+          <a class="post-action-btn btn btn--default" href="#" aria-label="回到顶部">
+        
+          <i class="fa fa-list" aria-hidden="true"></i>
+        </a>
+      </li>
+    </ul>
+  
+</div>
+
+            
+  
+    <div id="gitalk">
+      <noscript>Please enable JavaScript to view the comments powered by Gitalk.</noscript>
+    </div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gitalk/1.7.2/gitalk.min.js" integrity="sha512-EcTCcXV46teiNwe0VcnM5A038tcY+BaQYO4nW6Gh2i7v4/HjBVg7xx3+JBLl9WofDds//INJAiEGAtdgr8PWyA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script type="text/javascript">
+      (function() {
+        if (["localhost", "127.0.0.1"].indexOf(window.location.hostname) != -1) {
+          document.getElementById('gitalk').innerHTML = 'Gitalk comments not available by default when the website is previewed locally.';
+          return;
+        }
+        new Gitalk({
+          clientID: '',
+          clientSecret: '',
+          repo: 'bayareageek.github.io',
+          owner: 'bayareageek',
+          admin: ['bayareageek'],
+          id: '\/post\/java-%E8%99%9A%E6%8B%9F%E6%9C%BA%E5%8E%9F%E7%90%86-1-%E5%86%85%E5%AD%98%E5%88%92%E5%88%86\/',
+          ...{"distractionfreemode":false,"enablehotkey":true,"language":"zh-CN","pagerdirection":"first","perpage":15}
+        }).render('gitalk')
+      })()
+    </script>
+  
+
+
+          </div>
+        </article>
+        <footer id="footer" class="main-content-wrap">
+  <span class="copyrights">
+    &copy; 2021 湾区极客. All Rights Reserved
+  </span>
+</footer>
+
+      </div>
+      <div id="bottom-bar" class="post-bottom-bar" data-behavior="5">
+        <div class="post-actions-wrap">
+  
+      <nav >
+        <ul class="post-actions post-action-nav">
+          
+            <li class="post-action">
+              
+                <a class="post-action-btn btn btn--default tooltip--top" href="https://bayareageek.github.io/post/java-%E8%99%9A%E6%8B%9F%E6%9C%BA%E5%8E%9F%E7%90%86-2-%E5%AF%B9%E8%B1%A1%E5%88%9B%E5%BB%BA%E5%92%8C%E5%9B%9E%E6%94%B6/" data-tooltip="Java 虚拟机原理 (二) 对象创建与回收" aria-label="下一篇: Java 虚拟机原理 (二) 对象创建与回收">
+              
+                  <i class="fa fa-angle-left"></i>
+                  <span class="hide-xs hide-sm text-small icon-ml">下一篇</span>
+                </a>
+            </li>
+            <li class="post-action">
+              
+                <a class="post-action-btn btn btn--disabled">
+              
+                  <span class="hide-xs hide-sm text-small icon-mr">上一篇</span>
+                  <i class="fa fa-angle-right"></i>
+                </a>
+            </li>
+          
+        </ul>
+      </nav>
+    <ul class="post-actions post-action-share" >
+      
+        <li class="post-action hide-lg hide-md hide-sm">
+          <a class="post-action-btn btn btn--default btn-open-shareoptions" href="#btn-open-shareoptions" aria-label="分享这个帖子">
+            <i class="fa fa-share-alt" aria-hidden="true"></i>
+          </a>
+        </li>
+        
+          <li class="post-action hide-xs">
+            <a class="post-action-btn btn btn--default" target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://bayareageek.github.io/post/java-%E8%99%9A%E6%8B%9F%E6%9C%BA%E5%8E%9F%E7%90%86-1-%E5%86%85%E5%AD%98%E5%88%92%E5%88%86/" title="分享到 %s Facebook" aria-label="分享到 %s Facebook">
+              <i class="fab fa-facebook-square" aria-hidden="true"></i>
+            </a>
+          </li>
+        
+          <li class="post-action hide-xs">
+            <a class="post-action-btn btn btn--default" target="new" href="https://twitter.com/intent/tweet?text=https://bayareageek.github.io/post/java-%E8%99%9A%E6%8B%9F%E6%9C%BA%E5%8E%9F%E7%90%86-1-%E5%86%85%E5%AD%98%E5%88%92%E5%88%86/" title="分享到 %s Twitter" aria-label="分享到 %s Twitter">
+              <i class="fab fa-twitter" aria-hidden="true"></i>
+            </a>
+          </li>
+        
+          <li class="post-action hide-xs">
+            <a class="post-action-btn btn btn--default" target="new" href="https://plus.google.com/share?url=https://bayareageek.github.io/post/java-%E8%99%9A%E6%8B%9F%E6%9C%BA%E5%8E%9F%E7%90%86-1-%E5%86%85%E5%AD%98%E5%88%92%E5%88%86/" title="分享到 %s Google&#43;" aria-label="分享到 %s Google&#43;">
+              <i class="fab fa-google-plus" aria-hidden="true"></i>
+            </a>
+          </li>
+        
+      
+      
+        <li class="post-action">
+          <a class="post-action-btn btn btn--default" href="#gitalk" aria-label="发表评论">
+            <i class="fa fa-comment"></i>
+          </a>
+        </li>
+      
+      <li class="post-action">
+        
+          <a class="post-action-btn btn btn--default" href="#" aria-label="回到顶部">
+        
+          <i class="fa fa-list" aria-hidden="true"></i>
+        </a>
+      </li>
+    </ul>
+  
+</div>
+
+      </div>
+      
+<div id="share-options-bar" class="share-options-bar" data-behavior="5">
+  <i id="btn-close-shareoptions" class="fa fa-times"></i>
+  <ul class="share-options">
+    
+      <li class="share-option">
+        <a class="share-option-btn" target="new" href="https://www.facebook.com/sharer/sharer.php?u=https%3A%2F%2Fbayareageek.github.io%2Fpost%2Fjava-%25E8%2599%259A%25E6%258B%259F%25E6%259C%25BA%25E5%258E%259F%25E7%2590%2586-1-%25E5%2586%2585%25E5%25AD%2598%25E5%2588%2592%25E5%2588%2586%2F" aria-label="分享到 %s Facebook">
+          <i class="fab fa-facebook-square" aria-hidden="true"></i><span>分享到 Facebook</span>
+        </a>
+      </li>
+    
+      <li class="share-option">
+        <a class="share-option-btn" target="new" href="https://twitter.com/intent/tweet?text=https%3A%2F%2Fbayareageek.github.io%2Fpost%2Fjava-%25E8%2599%259A%25E6%258B%259F%25E6%259C%25BA%25E5%258E%259F%25E7%2590%2586-1-%25E5%2586%2585%25E5%25AD%2598%25E5%2588%2592%25E5%2588%2586%2F" aria-label="分享到 %s Twitter">
+          <i class="fab fa-twitter" aria-hidden="true"></i><span>分享到 Twitter</span>
+        </a>
+      </li>
+    
+      <li class="share-option">
+        <a class="share-option-btn" target="new" href="https://plus.google.com/share?url=https%3A%2F%2Fbayareageek.github.io%2Fpost%2Fjava-%25E8%2599%259A%25E6%258B%259F%25E6%259C%25BA%25E5%258E%259F%25E7%2590%2586-1-%25E5%2586%2585%25E5%25AD%2598%25E5%2588%2592%25E5%2588%2586%2F" aria-label="分享到 %s Google&#43;">
+          <i class="fab fa-google-plus" aria-hidden="true"></i><span>分享到 Google&#43;</span>
+        </a>
+      </li>
+    
+  </ul>
+</div>
+<div id="share-options-mask" class="share-options-mask"></div>
+
+    </div>
+    
+    <div id="about">
+  <div id="about-card">
+    <div id="about-btn-close">
+      <i class="fa fa-times"></i>
+    </div>
+    
+      <img id="about-card-picture" src="https://bayareageek.github.io/images/advar.jpg" alt="作者的图片" />
+    
+    <h4 id="about-card-name">湾区极客</h4>
+    
+      <div id="about-card-bio">大湾区技术极客聚集地</div>
+    
+    
+      <div id="about-card-job">
+        <i class="fa fa-briefcase"></i>
+        <br/>
+        研发工程师
+      </div>
+    
+    
+      <div id="about-card-location">
+        <i class="fa fa-map-marker-alt"></i>
+        <br/>
+        中国·大湾区
+      </div>
+    
+  </div>
+</div>
+
+    
+
+    
+  
+    
+      <div id="cover" style="background-image:url('https://bayareageek.github.io/images/cover/program-cover.jpg');"></div>
+    
+  
+
+
+    
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js" integrity="sha512-894YE6QWD5I59HgZOGReFYm4dnWc1Qt5NtvYSaNcOP+u1T9qYdvdihz0PPSiiqn/+/3e7Jo4EaG7TubfWGUrMQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.1.0/highlight.min.js" integrity="sha512-z+/WWfyD5tccCukM4VvONpEtLmbAm5LDu7eKiyMQJ9m7OfPEDL7gENyDRL3Yfe8XAuGsS2fS4xSMnl6d30kqGQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/fancybox/3.5.7/jquery.fancybox.min.js" integrity="sha512-uURl+ZXMBrF4AwGaWmEetzrd+J5/8NRkWAvJx5sbPSSuOb0bZLqf+tOzniObO00BjHa/dD7gub9oCGMLPQHtQA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+
+
+<script src="https://bayareageek.github.io/js/script-8lglxdix2nqhalxxm2bujhkcc8cctdrd5o5axonwhfzx2zqrer5facyn8.min.js"></script>
+
+
+  
+    <script async crossorigin="anonymous" defer integrity="sha512-gE8KAQyFIzV1C9+GZ8TKJHZS2s+n7EjNtC+IMRn1l5+WYJTHOODUM6JSjZhFhqXmc7bG8Av6XXpckA4tYhflnw==" src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.1.0/languages/apache.min.js"></script>
+  
+
+  
+    <script async crossorigin="anonymous" defer integrity="sha512-EWROca+bote+7Oaaar1F6y74iZj1r1F9rm/ly7o+/FwJopbBaWtsFDmaKoZDd3QiGU2pGacBirHJNivmGLYrow==" src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.1.0/languages/go.min.js"></script>
+  
+
+  
+    <script async crossorigin="anonymous" defer integrity="sha512-GDVzAn0wpx1yVtQsRWmFc6PhJiLBPdUic+h4GWgljBh904O3JU10fk9EKNpVyIoPqkFn54rgL2QBG4BmUTMpiQ==" src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.1.0/languages/http.min.js"></script>
+  
+
+  
+    <script async crossorigin="anonymous" defer integrity="sha512-UgZlma8NzkrDb/NWgmLIcTrH7i/CSnLLDRFqCSNF5NGPpjKmzyM25qcoXGOup8+cDakKyaiTDd7N4dyH4YT+IA==" src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.1.0/languages/less.min.js"></script>
+  
+
+  
+    <script async crossorigin="anonymous" defer integrity="sha512-lot9koe73sfXIrUvIPM/UEhuMciN56RPyBdOyZgfO53P2lkWyyXN7J+njcxIIBRV+nVDQeiWtiXg+bLAJZDTfg==" src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.1.0/languages/nginx.min.js"></script>
+  
+
+  
+    <script async crossorigin="anonymous" defer integrity="sha512-Zd3e7XxHP00TD0Imr0PIfeM0fl0v95kMWuhyAS3Wn1UTSXTkz0OhtRgBAr4JlmADRgiXr4x7lpeUdqaGN8xIog==" src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.1.0/languages/puppet.min.js"></script>
+  
+
+  
+    <script async crossorigin="anonymous" defer integrity="sha512-qtqDO052iXMSP+5d/aE/jMtL9vIIGvONgTJziC2K/ZIB1yEGa55WVxGE9/08rSQ62EoDifS9SWVGZ7ihSLhzMA==" src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.1.0/languages/scss.min.js"></script>
+  
+
+  
+    <script async crossorigin="anonymous" defer integrity="sha512-1NmkjnEDnwwwcu28KoQF8vs3oaPFokQHbmbtwGhFfeDsQZtVFI8zW2aE9O8yMYdpdyKV/5blE4pSWw4Z/Sv97w==" src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.1.0/languages/stylus.min.js"></script>
+  
+
+  
+    <script async crossorigin="anonymous" defer integrity="sha512-B2wSfruPjr8EJL6IIzQr1eAuDwrsfIfccNf/LCEdxELCgC/S/ZMt/Uvk80aD79m7IqOqW+Sw8nbkvha20yZpzg==" src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.1.0/languages/swift.min.js"></script>
+  
+
+  
+    <script async crossorigin="anonymous" defer integrity="sha512-28oDiQZGKUVN6wQ7PSLPNipOcmkCALXKwOi7bnkyFf8QiMZQxG9EQoy/iiNx6Zxj2cG2SbVa4dXKigQhu7GiFw==" src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.1.0/languages/yaml.min.js"></script>
+  
+
+
+<script>
+$(document).ready(function() {
+  hljs.configure({ classPrefix: '', useBR: false });
+  $('pre.code-highlight > code, pre > code').each(function(i, block) {
+    if (!$(this).hasClass('codeblock')) {
+      $(this).addClass('codeblock');
+    }
+    hljs.highlightBlock(block);
+  });
+});
+</script>
+
+
+
+
+    
+  </body>
+</html>
+

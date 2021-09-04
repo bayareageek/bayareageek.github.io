@@ -1,0 +1,808 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+  <head>
+    
+    <script type="application/ld+json">
+
+{  
+  "@context":"http://schema.org",
+  "@type":"Website",
+  "@id":"https:\/\/bayareageek.github.io\/",
+  "author": {
+    "@type": "Person",
+    "name": "湾区极客",
+    
+    "image": "https://bayareageek.github.io/images/advar.jpg"
+    
+  },
+  "name":"",
+  "description":"\u003cp\u003eZGC 是 JVM 生态最新最先进的一款垃圾收集器，具有可扩展低延迟高吞吐量等特性，其设计目标包括：\u003c\/p\u003e\n\u003cul\u003e\n\u003cli\u003e亚毫秒级停顿时间（ \u0026lt;= 10ms)；\u003c\/li\u003e\n\u003cli\u003e停顿时间长短与堆大小、存活对象数量、根节点数量无关；\u003c\/li\u003e\n\u003cli\u003e支持堆大小从8MB到16TB不等；\u003c\/li\u003e\n\u003c\/ul\u003e",
+  "url":"https:\/\/bayareageek.github.io\/post\/java-%E8%99%9A%E6%8B%9F%E6%9C%BA%E5%8E%9F%E7%90%86-6-zgc-%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86%E5%99%A8\/",
+  "keywords":"[Java, 技术, 生活]"
+}
+
+</script>
+    <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="generator" content="Hugo 0.80.0 with theme Tranquilpeak 0.5.1-BETA">
+<meta name="author" content="湾区极客">
+<meta name="keywords" content="Java, 技术, 生活">
+<meta name="description" content="ZGC 是 JVM 生态最新最先进的一款垃圾收集器，具有可扩展低延迟高吞吐量等特性，其设计目标包括：
+
+亚毫秒级停顿时间（ &lt;= 10ms)；
+停顿时间长短与堆大小、存活对象数量、根节点数量无关；
+支持堆大小从8MB到16TB不等；
+">
+
+
+<meta property="og:description" content="ZGC 是 JVM 生态最新最先进的一款垃圾收集器，具有可扩展低延迟高吞吐量等特性，其设计目标包括：
+
+亚毫秒级停顿时间（ &lt;= 10ms)；
+停顿时间长短与堆大小、存活对象数量、根节点数量无关；
+支持堆大小从8MB到16TB不等；
+">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Java 虚拟机原理 (六) ZGC 垃圾收集器">
+<meta name="twitter:title" content="Java 虚拟机原理 (六) ZGC 垃圾收集器">
+<meta property="og:url" content="https://bayareageek.github.io/post/java-%E8%99%9A%E6%8B%9F%E6%9C%BA%E5%8E%9F%E7%90%86-6-zgc-%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86%E5%99%A8/">
+<meta property="twitter:url" content="https://bayareageek.github.io/post/java-%E8%99%9A%E6%8B%9F%E6%9C%BA%E5%8E%9F%E7%90%86-6-zgc-%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86%E5%99%A8/">
+<meta property="og:site_name" content="">
+<meta property="og:description" content="ZGC 是 JVM 生态最新最先进的一款垃圾收集器，具有可扩展低延迟高吞吐量等特性，其设计目标包括：
+
+亚毫秒级停顿时间（ &lt;= 10ms)；
+停顿时间长短与堆大小、存活对象数量、根节点数量无关；
+支持堆大小从8MB到16TB不等；
+">
+<meta name="twitter:description" content="ZGC 是 JVM 生态最新最先进的一款垃圾收集器，具有可扩展低延迟高吞吐量等特性，其设计目标包括：
+
+亚毫秒级停顿时间（ &lt;= 10ms)；
+停顿时间长短与堆大小、存活对象数量、根节点数量无关；
+支持堆大小从8MB到16TB不等；
+">
+<meta property="og:locale" content="zh-cn">
+
+  
+    <meta property="article:published_time" content="2021-04-08T14:39:45">
+  
+  
+    <meta property="article:modified_time" content="2021-04-08T14:39:45">
+  
+  
+  
+    
+      <meta property="article:section" content="Java">
+    
+  
+  
+    
+      <meta property="article:tag" content="JVM">
+    
+      <meta property="article:tag" content="垃圾回收器">
+    
+  
+
+
+<meta name="twitter:card" content="summary">
+
+
+
+
+
+
+
+  <meta property="og:image" content="https://bayareageek.github.io/images/advar.jpg">
+  <meta property="twitter:image" content="https://bayareageek.github.io/images/advar.jpg">
+
+
+
+
+
+  <meta property="og:image" content="https://pic-bed-sz.oss-cn-shenzhen.aliyuncs.com/blog%2FJava%20%E8%99%9A%E6%8B%9F%E6%9C%BA%E5%8E%9F%E7%90%86%20%28%E5%85%AD%29%20ZGC%20%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86%E5%99%A8%2Fzgc%E9%A6%96%E9%A1%B5%E5%9B%BE.png">
+  <meta property="twitter:image" content="https://pic-bed-sz.oss-cn-shenzhen.aliyuncs.com/blog%2FJava%20%E8%99%9A%E6%8B%9F%E6%9C%BA%E5%8E%9F%E7%90%86%20%28%E5%85%AD%29%20ZGC%20%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86%E5%99%A8%2Fzgc%E9%A6%96%E9%A1%B5%E5%9B%BE.png">
+
+
+    <title>Java 虚拟机原理 (六) ZGC 垃圾收集器</title>
+
+    <link rel="icon" href="https://bayareageek.github.io/favicon.png">
+    
+
+    
+
+    <link rel="canonical" href="https://bayareageek.github.io/post/java-%E8%99%9A%E6%8B%9F%E6%9C%BA%E5%8E%9F%E7%90%86-6-zgc-%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86%E5%99%A8/">
+
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" integrity="sha512-iBBXm8fW90+nuLcSKlbmrPcLa0OT92xO1BIsZ+ywDWZCvqsWgccV3gFoRBv0z+8dLJgyAHIhR35VZc2oM/gI1w==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/fancybox/3.5.7/jquery.fancybox.min.css" integrity="sha512-H9jrZiiopUdsLpg94A333EfumgUBpO9MdbxStdeITo+KEIMaNfHNvwyjjDJb+ERPaRS6DpyRlKbvPUasNItRyw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/gitalk/1.7.2/gitalk.css" integrity="sha512-MLcK/YRapzET1qTBXrOiZE6bGBgtATMo2bIyalVJ8EKDEGNoeA3SPQkvWAR0zNS650YG13ocXBMeioDuZcSRuQ==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    
+    
+    
+    <link rel="stylesheet" href="https://bayareageek.github.io/css/style-2w2urpokyukbsouppglitcyxngrsa0pcm58rrm5mqo3ieqo6bkvr3cz9nvf.min.css" />
+    
+    
+
+    
+      
+    
+    
+  </head>
+
+  <body>
+    <div id="blog">
+      <header id="header" data-behavior="5">
+  <i id="btn-open-sidebar" class="fa fa-lg fa-bars"></i>
+  <div class="header-title">
+    <a class="header-title-link" href="https://bayareageek.github.io/" aria-label="去首页"></a>
+  </div>
+  
+    
+      <a class="header-right-picture "
+         href="https://bayareageek.github.io/#about" aria-label="打开链接: /#about">
+    
+    
+    
+      
+        <img class="header-picture" src="https://bayareageek.github.io/images/advar.jpg" alt="作者的图片" />
+      
+    
+    </a>
+  
+</header>
+
+      <nav id="sidebar" data-behavior="5">
+  <div class="sidebar-container">
+    
+      <div class="sidebar-profile">
+        <a href="https://bayareageek.github.io/#about" aria-label="阅读有关作者的更多信息">
+          <img class="sidebar-profile-picture" src="https://bayareageek.github.io/images/advar.jpg" alt="作者的图片" />
+        </a>
+        <h4 class="sidebar-profile-name">湾区极客</h4>
+        
+          <h5 class="sidebar-profile-bio">大湾区技术极客聚集地</h5>
+        
+      </div>
+    
+    <ul class="sidebar-buttons">
+      
+  <li class="sidebar-button">
+    
+      <a class="sidebar-button-link " href="https://bayareageek.github.io/" title="Home">
+    
+      <i class="sidebar-button-icon fas fa-lg fa-home" aria-hidden="true"></i>
+      
+      <span class="sidebar-button-desc">首页</span>
+    </a>
+  </li>
+
+  <li class="sidebar-button">
+    
+      <a class="sidebar-button-link " href="https://bayareageek.github.io/categories" title="Categories">
+    
+      <i class="sidebar-button-icon fas fa-lg fa-bookmark" aria-hidden="true"></i>
+      
+      <span class="sidebar-button-desc">分类</span>
+    </a>
+  </li>
+
+  <li class="sidebar-button">
+    
+      <a class="sidebar-button-link " href="https://bayareageek.github.io/tags" title="Tags">
+    
+      <i class="sidebar-button-icon fas fa-lg fa-tags" aria-hidden="true"></i>
+      
+      <span class="sidebar-button-desc">标签</span>
+    </a>
+  </li>
+
+  <li class="sidebar-button">
+    
+      <a class="sidebar-button-link " href="https://bayareageek.github.io/archives" title="Archives">
+    
+      <i class="sidebar-button-icon fas fa-lg fa-archive" aria-hidden="true"></i>
+      
+      <span class="sidebar-button-desc">归档</span>
+    </a>
+  </li>
+
+  <li class="sidebar-button">
+    
+      <a class="sidebar-button-link " href="https://bayareageek.github.io/#about" title="About">
+    
+      <i class="sidebar-button-icon fas fa-lg fa-question" aria-hidden="true"></i>
+      
+      <span class="sidebar-button-desc">关于</span>
+    </a>
+  </li>
+
+
+    </ul>
+    <ul class="sidebar-buttons">
+      
+  <li class="sidebar-button">
+    
+      <a class="sidebar-button-link " href="https://github.com/duval1024" target="_blank" rel="noopener" title="GitHub">
+    
+      <i class="sidebar-button-icon fab fa-lg fa-github" aria-hidden="true"></i>
+      
+      <span class="sidebar-button-desc">GitHub</span>
+    </a>
+  </li>
+
+
+    </ul>
+    <ul class="sidebar-buttons">
+      
+  <li class="sidebar-button">
+    
+      <a class="sidebar-button-link " href="https://bayareageek.github.io/index.xml" title="RSS">
+    
+      <i class="sidebar-button-icon fas fa-lg fa-rss" aria-hidden="true"></i>
+      
+      <span class="sidebar-button-desc">RSS</span>
+    </a>
+  </li>
+
+
+    </ul>
+  </div>
+</nav>
+
+      
+
+      <div id="main" data-behavior="5"
+        class="
+               hasCoverMetaIn
+               ">
+        <article class="post">
+          
+          
+            <div class="post-header main-content-wrap text-left">
+  
+    <h1 class="post-title">
+      Java 虚拟机原理 (六) ZGC 垃圾收集器
+    </h1>
+  
+  
+  <div class="postShorten-meta post-meta">
+    
+      <time datetime="2021-04-08T14:39:45Z">
+        
+  
+  
+  
+  
+    2021-04-08
+  
+
+      </time>
+    
+    
+  
+  
+    <span>发布在</span>
+    
+      <a class="category-link" href="https://bayareageek.github.io/categories/java">Java</a>
+    
+  
+
+  </div>
+
+</div>
+          
+          <div class="post-content markdown">
+            <div class="main-content-wrap">
+              <p>ZGC 是 JVM 生态最新最先进的一款垃圾收集器，具有可扩展低延迟高吞吐量等特性，其设计目标包括：</p>
+<ul>
+<li>亚毫秒级停顿时间（ &lt;= 10ms)；</li>
+<li>停顿时间长短与堆大小、存活对象数量、根节点数量无关；</li>
+<li>支持堆大小从8MB到16TB不等；</li>
+</ul>
+<h2 id="总览">总览</h2>
+<p>ZGC 主要特点包括：</p>
+<ul>
+<li>尽可能的并发；</li>
+<li>基于 Region 的堆空间划分；</li>
+<li>空间整理；</li>
+<li>支持 NUMA-aware；</li>
+<li>使用染色指针（colored pointers）</li>
+<li>使用读屏障；</li>
+</ul>
+<h2 id="并发">并发</h2>
+<p>ZGC 之所以能实现10ms以内的低延迟，最核心原因是实现了并发的对象转移。
+<img src="https://pic-bed-sz.oss-cn-shenzhen.aliyuncs.com/blog%2FJava%20%E8%99%9A%E6%8B%9F%E6%9C%BA%E5%8E%9F%E7%90%86%20%28%E5%85%AD%29%20ZGC%20%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86%E5%99%A8%2FZGC%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86%E9%98%B6%E6%AE%B5%E5%9B%BE.png" alt="ZGC垃圾收集阶段图.png"></p>
+<p>ZGC 只有三个停顿阶段：开始标记（Mark Start）、结束标记（Mark End）、开始转移（Relocate Start）。这仨阶段的最大停顿时间不超过10ms，而开始标记和开始转移两个节点只是扫描 GC Root，与堆内活跃对象数量多少没有关系。而结束标记阶段（也称重新标记阶段）的停顿时间一般小于1ms，如果超过1ms会重新进入并发标记阶段。</p>
+<p>此外，在每一个 GC 周期的并发标记阶段都会顺便进行上一个阶段的并发对象重定位。</p>
+<h2 id="region">Region</h2>
+<p><img src="https://pic-bed-sz.oss-cn-shenzhen.aliyuncs.com/blog%2FJava%20%E8%99%9A%E6%8B%9F%E6%9C%BA%E5%8E%9F%E7%90%86%20%28%E5%85%AD%29%20ZGC%20%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86%E5%99%A8%2Fzgc%20region%20%E5%88%92%E5%88%86.png" alt="zgc region 划分.png"></p>
+<p>ZGC 也是采用 Region 来划分堆空间，这点与 G1 类似，但有略有不同：</p>
+<ul>
+<li>ZGC 不采用分代划分；</li>
+<li>ZGC 包含三种大小类型的 Region：Small（2MB)、Medium（32MB)、Large（N * 2MB）；</li>
+<li>ZGC 中的 Region 也称为 ZPage，空闲的 ZPage 会被记录在 ZPageCache；而空闲的 ZPage 有可能会被归还给操作系统；</li>
+</ul>
+<h2 id="染色指针">染色指针</h2>
+<p><img src="https://pic-bed-sz.oss-cn-shenzhen.aliyuncs.com/blog%2FJava%20%E8%99%9A%E6%8B%9F%E6%9C%BA%E5%8E%9F%E7%90%86%20%28%E5%85%AD%29%20ZGC%20%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86%E5%99%A8%2F%E6%9F%93%E8%89%B2%E6%8C%87%E9%92%88%E5%AF%BB%E5%9D%80%E7%A9%BA%E9%97%B4.png" alt="染色指针寻址空间.png"></p>
+<p>ZGC 只支持64位地址系统，其中，[0~4TB) 对应Java堆，[4TB ~ 8TB) 称为M0地址空间，[8TB ~ 12TB) 称为M1地址空间，[12TB ~ 16TB) 预留未使用，[16TB ~ 20TB) 称为 Remapped 空间。</p>
+<p><img src="https://pic-bed-sz.oss-cn-shenzhen.aliyuncs.com/blog%2FJava%20%E8%99%9A%E6%8B%9F%E6%9C%BA%E5%8E%9F%E7%90%86%20%28%E5%85%AD%29%20ZGC%20%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86%E5%99%A8%2FHeap%20Multi-Mapping%20on%20Linux%3Ax86_64.png" alt="Heap Multi-Mapping on Linux:x86_64.png"></p>
+<p>因此，同一个时间点下，堆空间的某一个位置会同时有三个虚拟地址与之对应。ZGC 用这三个地址来标识该对象所处的状态，在对象转移和重定位过程中会用到这三个虚拟地址。</p>
+<h2 id="读屏障">读屏障</h2>
+<p>ZGC 在并发转移的时候会转移对象，并变更对象指针为 Remapped 空间指针。但此时应用程序中的指针还是 M0 或者 M1 空间指针，该指针也称为坏指针（bad pointer）。</p>
+<p>如果应用线程或者GC线程访问到该坏指针并尝试从堆中读取指针背后的对象，则会尝试在读取之后通过读屏障进行指针修复，类似伪代码如下：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-c++" data-lang="c++">Object o <span style="color:#f92672">=</span> obj.fieldA; <span style="color:#75715e">// Loading an object reference from heap
+</span><span style="color:#75715e"></span><span style="color:#f92672">&lt;</span>load barrier needed here<span style="color:#f92672">&gt;</span>
+Object p <span style="color:#f92672">=</span> o; <span style="color:#75715e">// No barrier, not a load from heap
+</span><span style="color:#75715e"></span>o.doSomething(); <span style="color:#75715e">// No barrier, not a load from heap
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">int</span> i <span style="color:#f92672">=</span> obj.fieldB; <span style="color:#75715e">// No barrier, not an object reference
+</span></code></pre></div><p>如上，假定 fieldA 对象已经被转移，需要被重定向。那么，第一行代码其后会被插入一段读屏障代码，代码里所做的事情就是修正当前指针为 M0 或者 M1 指针：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-c++" data-lang="c++">Object o <span style="color:#f92672">=</span> obj.fieldA; <span style="color:#75715e">// Loading an object reference from heap
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">if</span> (<span style="color:#f92672">!</span>(o <span style="color:#f92672">&amp;</span> good_bit_mask)) {
+    <span style="color:#66d9ef">if</span> (o <span style="color:#f92672">!=</span> null) {
+        slow_path(register_for(o), address_of(obj.fieldA));
+    }
+}
+</code></pre></div><p>这个修改过程大概有4%的执行开销。</p>
+<h2 id="zgc-回收过程详解">ZGC 回收过程详解</h2>
+<h3 id="初始标记pause-mark-start">初始标记/Pause Mark Start</h3>
+<p><img src="https://pic-bed-sz.oss-cn-shenzhen.aliyuncs.com/blog%2FJava%20%E8%99%9A%E6%8B%9F%E6%9C%BA%E5%8E%9F%E7%90%86%20%28%E5%85%AD%29%20ZGC%20%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86%E5%99%A8%2FPause%20Mark%20Start.png" alt="Pause Mark Start.png"></p>
+<p>从 GC Roots 出发快速标记并其引用的对象。由于根节点集合很小，这个阶段时间会很短。</p>
+<p>假如当前 GC 周期使用 M0 地址空间，那么被标记存活的对象1、2、4会被更新为 M0 指针。</p>
+<h3 id="并发标记以及并发重定位-concurrent-mark--remapped">并发标记以及并发重定位/ Concurrent Mark &amp;&amp; Remapped</h3>
+<p><img src="https://pic-bed-sz.oss-cn-shenzhen.aliyuncs.com/blog%2FJava%20%E8%99%9A%E6%8B%9F%E6%9C%BA%E5%8E%9F%E7%90%86%20%28%E5%85%AD%29%20ZGC%20%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86%E5%99%A8%2Fconcurrent%20mark.png" alt="concurrent mark.png"></p>
+<p>并发阶段会遍历整个堆，所有活跃对象都将得到标记。</p>
+<p>假如当前 GC 周期使用 M0 地址空间，则对象1、2、4、5、8会被更新为 M0 地址空间。而3、6、7可能还处于上一个阶段，也就是 M1 指针。另外，坏指针也会被修复为 M0 指针。</p>
+<h3 id="重新标记pause-mark-end">重新标记/Pause Mark End</h3>
+<p><img src="https://pic-bed-sz.oss-cn-shenzhen.aliyuncs.com/blog%2FJava%20%E8%99%9A%E6%8B%9F%E6%9C%BA%E5%8E%9F%E7%90%86%20%28%E5%85%AD%29%20ZGC%20%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86%E5%99%A8%2FPause%20Mark%20End.png" alt="Pause Mark End.png"></p>
+<p>重新阶段会 STW，并做一些收尾工作。这个阶段会控制在1ms以内，超过1ms会重新回到并发标记阶段。</p>
+<h3 id="并发迁移准备concurrent-prepare-for-reloc">并发迁移准备/Concurrent Prepare for Reloc</h3>
+<p><img src="https://pic-bed-sz.oss-cn-shenzhen.aliyuncs.com/blog%2FJava%20%E8%99%9A%E6%8B%9F%E6%9C%BA%E5%8E%9F%E7%90%86%20%28%E5%85%AD%29%20ZGC%20%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86%E5%99%A8%2FConcurrent%20Prepare%20for%20Relocate.png" alt="Concurrent Prepare for Relocate.png"></p>
+<p>经过之前的标记工作，已经掌握了整个堆中的存活对象。那么在并发迁移准备过程中，会计算迁移集合。</p>
+<p><img src="https://pic-bed-sz.oss-cn-shenzhen.aliyuncs.com/blog%2FJava%20%E8%99%9A%E6%8B%9F%E6%9C%BA%E5%8E%9F%E7%90%86%20%28%E5%85%AD%29%20ZGC%20%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86%E5%99%A8%2FConcurrent%20Prepare%20for%20Relocate%202.png" alt="Concurrent Prepare for Relocate 2.png"></p>
+<p>同时会初始化一个空的 forwarding tables，用于保存迁移前后的映射关系。</p>
+<h3 id="初始迁移pause-relacate-start">初始迁移/Pause Relacate Start</h3>
+<p><img src="https://pic-bed-sz.oss-cn-shenzhen.aliyuncs.com/blog%2FJava%20%E8%99%9A%E6%8B%9F%E6%9C%BA%E5%8E%9F%E7%90%86%20%28%E5%85%AD%29%20ZGC%20%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86%E5%99%A8%2FPause%20Relocate%20Start.png" alt="Pause Relocate Start.png"></p>
+<p>初始迁移阶段只是扫描与根节点直接关联的对象，并进行迁移，被迁移对象会被变更为 Remapped 指针，并把映射映射关系保存到  forwarding tables。该阶段只扫描少量对象，速度非常快。</p>
+<h3 id="并发迁移concurrent-relocate">并发迁移/Concurrent Relocate</h3>
+<p><img src="https://pic-bed-sz.oss-cn-shenzhen.aliyuncs.com/blog%2FJava%20%E8%99%9A%E6%8B%9F%E6%9C%BA%E5%8E%9F%E7%90%86%20%28%E5%85%AD%29%20ZGC%20%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86%E5%99%A8%2Fconcurrent%20reloacate%201.png" alt="concurrent reloacate 1.png"></p>
+<p><img src="https://pic-bed-sz.oss-cn-shenzhen.aliyuncs.com/blog%2FJava%20%E8%99%9A%E6%8B%9F%E6%9C%BA%E5%8E%9F%E7%90%86%20%28%E5%85%AD%29%20ZGC%20%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86%E5%99%A8%2Fconcurrent%20reloacate%202.png" alt="concurrent reloacate 2.png"></p>
+<p><img src="https://pic-bed-sz.oss-cn-shenzhen.aliyuncs.com/blog%2FJava%20%E8%99%9A%E6%8B%9F%E6%9C%BA%E5%8E%9F%E7%90%86%20%28%E5%85%AD%29%20ZGC%20%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86%E5%99%A8%2Fconcurrent%20reloacate%203.png" alt="concurrent reloacate 3.png"></p>
+<p><img src="https://pic-bed-sz.oss-cn-shenzhen.aliyuncs.com/blog%2FJava%20%E8%99%9A%E6%8B%9F%E6%9C%BA%E5%8E%9F%E7%90%86%20%28%E5%85%AD%29%20ZGC%20%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86%E5%99%A8%2Fconcurrent%20reloacate%204.png" alt="concurrent reloacate 4.png"></p>
+<p>并发转移阶段会遍历所有的迁移集合，进行存活对象迁移，并回收空区块。被迁移的对象指针都会被变更为 Remapped 指针，并把映射映射关系保存到  forwarding tables。</p>
+<p>假如当前 GC 周期使用 M0 地址空间，那么对象4、5、6都发生了迁移，此时其指针处于 Remapped 地址空间。而对象2、4、5所引用的指针都是处于 M2 指针。这些指针都已经失效，也就是坏指针，后续对象重定向阶段会修复它们。</p>
+<h3 id="对象重定位">对象重定位</h3>
+<p><img src="https://pic-bed-sz.oss-cn-shenzhen.aliyuncs.com/blog%2FJava%20%E8%99%9A%E6%8B%9F%E6%9C%BA%E5%8E%9F%E7%90%86%20%28%E5%85%AD%29%20ZGC%20%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86%E5%99%A8%2FGC%20Cycle%20Completed.png" alt="GC Cycle Completed.png"></p>
+<p>上一个 GC 周期结束后，JVM 内部还有很多坏指针，如果应用线程线程加载了这些指针，则会在读屏障阶段修复这些指针。剩下的未修复指针将延迟到第二个 GC 周期来进行修复。</p>
+<p>假如上一个 GC 周期使用的是 M0 地址空间，那么新的 GC 周期就会使用 M1 地址空间进行活跃对象标记。</p>
+<p><img src="https://pic-bed-sz.oss-cn-shenzhen.aliyuncs.com/blog%2FJava%20%E8%99%9A%E6%8B%9F%E6%9C%BA%E5%8E%9F%E7%90%86%20%28%E5%85%AD%29%20ZGC%20%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86%E5%99%A8%2FPause%20Mark%20Start%28Second%20Cycle%29.png" alt="Pause Mark Start(Second Cycle).png"></p>
+<p><img src="https://pic-bed-sz.oss-cn-shenzhen.aliyuncs.com/blog%2FJava%20%E8%99%9A%E6%8B%9F%E6%9C%BA%E5%8E%9F%E7%90%86%20%28%E5%85%AD%29%20ZGC%20%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86%E5%99%A8%2FConcurrent%20Mark%28Second%20Cycle%29.png" alt="Concurrent Mark(Second Cycle).png"></p>
+<p>下一个周期的初始标记和并发标记会顺带把上一个周期的坏指针修复。</p>
+<p><img src="https://pic-bed-sz.oss-cn-shenzhen.aliyuncs.com/blog%2FJava%20%E8%99%9A%E6%8B%9F%E6%9C%BA%E5%8E%9F%E7%90%86%20%28%E5%85%AD%29%20ZGC%20%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86%E5%99%A8%2FConcurrent%20Prepare%20for%20Relocate%28Second%20Cycle%29.png" alt="Concurrent Prepare for Relocate(Second Cycle).png"></p>
+<p>然后清空上一个阶段的 forwarding table。</p>
+<h2 id="zgc-触发条件">ZGC 触发条件</h2>
+<p>CMS 调优中一般会调整 CMSInitiatingOccupancyFraction 参数，然后在老年代占用达到一定比例的时候，触发一次 GC；</p>
+<p>G1 中也有类似的参数 InitiatingHeapOccupancyPercent，在老年代占用达到堆空间的一定比例的时候，触发一次混合 GC；此外，G1 还会评估当前收集时间是否超过阈值 MaxGCPauseMillis ，如果超过阈值也会触发一次 GC；</p>
+<p>无论是 CMS 或者是 G1 的触发方式都存在一些不足。因此，ZGC 使用了更复杂的一套机制：</p>
+<ul>
+<li>
+<p><strong>元空间分配触发</strong>：元空间分配不足的时候触发。使用 G1 的时候一般建议配置，因为默认会占满所有剩余内存。但在 ZGC 中不存在这个问题，所以一般不用关心元空间分配。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">  [2021-04-07T03:17:58.763-0400][14855][gc          ] GC(0) Garbage Collection (Metadata GC Threshold) 196M(0%)-&gt;196M(0%)
+  [2021-04-07T03:18:00.052-0400][14855][gc          ] GC(1) Garbage Collection (Metadata GC Threshold) 444M(0%)-&gt;202M(0%)
+  [2021-04-07T03:18:04.429-0400][14855][gc          ] GC(2) Garbage Collection (Metadata GC Threshold) 1038M(1%)-&gt;206M(0%)
+</code></pre></div></li>
+<li>
+<p><strong>固定时间间隔触发</strong>：通过 <em>-XX:ZCollectionInterval=&lt;seconds&gt;</em> 来控制。如果服务压力不大的话，这是最主要的 GC 方式。这种方式是为了在流量平稳的情况下定时触发 GC，避免流量突增的时候才触发 GC，从而导致线程阻塞。如果 G1 用得比较多话，就会发现 G1 就存在这个比较严重的问题。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">  [2021-04-07T10:00:24.610-0400][14855][gc          ] GC(203) Garbage Collection (Timer) 48674M(32%)-&gt;336M(0%)
+  [2021-04-07T10:02:24.709-0400][14855][gc          ] GC(204) Garbage Collection (Timer) 54888M(36%)-&gt;360M(0%)
+  [2021-04-07T10:04:24.804-0400][14855][gc          ] GC(205) Garbage Collection (Timer) 50482M(33%)-&gt;362M(0%)
+  [2021-04-07T10:06:24.904-0400][14855][gc          ] GC(206) Garbage Collection (Timer) 46962M(31%)-&gt;370M(0%)
+  [2021-04-07T10:08:25.006-0400][14855][gc          ] GC(207) Garbage Collection (Timer) 49444M(32%)-&gt;340M(0%)
+</code></pre></div></li>
+<li>
+<p><strong>基于分配速率的自适应算法触发</strong>：ZGC 根据对象分配速率和 GC 时间来计算内存占用达到什么阈值的时候才触发 GC。通过ZAllocationSpikeTolerance参数控制阈值大小，该参数默认2，数值越大，越早的触发GC。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">[2021-04-07T09:30:41.600-0400][22575][gc          ] GC(166) Garbage Collection (Allocation Rate) 7854M(96%)-&gt;340M(4%)
+[2021-04-07T09:31:16.474-0400][22575][gc          ] GC(167) Garbage Collection (Allocation Rate) 7798M(95%)-&gt;330M(4%)
+[2021-04-07T09:31:54.769-0400][22575][gc          ] GC(168) Garbage Collection (Allocation Rate) 7812M(95%)-&gt;312M(4%)
+[2021-04-07T09:32:34.672-0400][22575][gc          ] GC(169) Garbage Collection (Allocation Rate) 7894M(96%)-&gt;330M(4%)
+[2021-04-07T09:33:09.872-0400][22575][gc          ] GC(170) Garbage Collection (Allocation Rate) 7886M(96%)-&gt;314M(4%)
+</code></pre></div></li>
+<li>
+<p><strong>阻塞内存触发分配</strong>：当垃圾来不及回收并堆满整个堆的情况下，会触发这种 GC。调优良好情况下，应该尽量避免这种 GC：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">  [2021-04-07T10:08:14.458-0400][23755][gc          ] Allocation Stall (nioEventLoopGroup-12-1) 0.749ms
+  [2021-04-07T10:08:14.458-0400][23783][gc          ] Allocation Stall (nioEventLoopGroup-16-1) 1.019ms
+  [2021-04-07T11:13:08.556-0400][23764][gc          ] Allocation Stall (nioEventLoopGroup-13-1) 0.115ms
+</code></pre></div></li>
+<li>
+<p>主动触发规则：类似于固定间隔规则，但时间间隔不固定，是ZGC自行算出来的时机，我们的服务因为已经加了基于固定时间间隔的触发机制，所以通过-ZProactive参数将该功能关闭，以免GC频繁，影响服务可用性。 日志中关键字是&quot;Proactive&quot;</p>
+</li>
+<li>
+<p>预热规则：服务刚启动时出现，一般不需要关注。日志中关键字是&quot;Warmup&quot;</p>
+</li>
+<li>
+<p>外部触发：代码中显式调用System.gc()触发。 日志中关键字是&quot;System.gc()&quot;</p>
+</li>
+</ul>
+<blockquote>
+<p>后边三种较少见，没在生产服务里找到案例，所以直接复制了<a href="https://tech.meituan.com/2020/08/06/new-zgc-practice-in-meituan.html">美团的技术文章</a>里的片段。</p>
+</blockquote>
+<h2 id="zgc-与-g1-案例对比">ZGC 与 G1 案例对比</h2>
+<p>简单做了下测试对比下 ZGC 和 G1，无论是大堆或者小堆，ZGC 在收集停顿上都控制得非常好，基本不会超过10ms，这点远胜于 G1；但是可能 ZGC 的触发策略保守了，总的停顿时间要比 G1 多。</p>
+<p>但总体来说，ZGC 是一款低延迟高吞吐量的收集器，是 G1 的良好替代！</p>
+<h3 id="大堆150g">大堆（150G）</h3>
+<h4 id="zgc">ZGC</h4>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">-Xmx150g -Xms150g -XX:ReservedCodeCacheSize<span style="color:#f92672">=</span>256m -XX:InitialCodeCacheSize<span style="color:#f92672">=</span>256m 
+-XX:+UnlockExperimentalVMOptions -XX:+UseZGC -XX:ConcGCThreads<span style="color:#f92672">=</span><span style="color:#ae81ff">80</span> -XX:ParallelGCThreads<span style="color:#f92672">=</span><span style="color:#ae81ff">80</span> 
+-XX:ZCollectionInterval<span style="color:#f92672">=</span><span style="color:#ae81ff">120</span> -XX:ZAllocationSpikeTolerance<span style="color:#f92672">=</span><span style="color:#ae81ff">5</span> -XX:+UnlockDiagnosticVMOptions 
+-XX:-ZProactive -Xlog:safepoint,classhisto*<span style="color:#f92672">=</span>trace,age*,gc*<span style="color:#f92672">=</span>info:file<span style="color:#f92672">=</span>gc.log:time,tid,tags:filecount<span style="color:#f92672">=</span>5,filesize<span style="color:#f92672">=</span>500m
+</code></pre></div><p><img src="https://pic-bed-sz.oss-cn-shenzhen.aliyuncs.com/blog%2FJava%20%E8%99%9A%E6%8B%9F%E6%9C%BA%E5%8E%9F%E7%90%86%20%28%E5%85%AD%29%20ZGC%20%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86%E5%99%A8%2FZGC%E5%A4%A7%E5%A0%86%E5%81%9C%E9%A1%BF%E6%97%B6%E9%97%B4%E5%9B%BE.png" alt="ZGC大堆停顿时间图.png"></p>
+<p><a href="https://gceasy.io/diamondgc-report.jsp?oTxnId_value=0232678d-bae8-4b29-8347-a4630972754e">GC分析报告</a></p>
+<h4 id="g1">G1</h4>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">-Xmx150g -Xms150g -XX:+UseG1GC -XX:MaxGCPauseMillis<span style="color:#f92672">=</span><span style="color:#ae81ff">500</span> -XX:MetaspaceSize<span style="color:#f92672">=</span>150m -XX:MaxMetaspaceSize<span style="color:#f92672">=</span>150M -XX:+UnlockExperimentalVMOptions -Xlog:safepoint,classhisto*<span style="color:#f92672">=</span>trace,age*,gc*<span style="color:#f92672">=</span>info:file<span style="color:#f92672">=</span>gc.log:time,tid,tags:filecount<span style="color:#f92672">=</span>5,filesize<span style="color:#f92672">=</span>500m
+</code></pre></div><p><img src="https://pic-bed-sz.oss-cn-shenzhen.aliyuncs.com/blog%2FJava%20%E8%99%9A%E6%8B%9F%E6%9C%BA%E5%8E%9F%E7%90%86%20%28%E5%85%AD%29%20ZGC%20%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86%E5%99%A8%2FG1%E5%A4%A7%E5%A0%86%E5%81%9C%E9%A1%BF%E6%97%B6%E9%97%B4%E5%9B%BE.png" alt="G1大堆停顿时间图.png"></p>
+<p><a href="https://gceasy.io/diamondgc-report.jsp?oTxnId_value=93be8dc7-a1bc-47bf-8a41-576354036acd">GC分析报告</a></p>
+<h3 id="小堆8g">小堆（8G）</h3>
+<h4 id="zgc-1">ZGC</h4>
+<p><img src="https://pic-bed-sz.oss-cn-shenzhen.aliyuncs.com/blog%2FJava%20%E8%99%9A%E6%8B%9F%E6%9C%BA%E5%8E%9F%E7%90%86%20%28%E5%85%AD%29%20ZGC%20%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86%E5%99%A8%2FZGC%E5%B0%8F%E5%A0%86%E5%81%9C%E9%A1%BF%E6%97%B6%E9%97%B4.png" alt="ZGC小堆停顿时间.png"></p>
+<p><a href="https://gceasy.io/diamondgc-report.jsp?oTxnId_value=83a0415a-5a27-457b-b807-ec1d91a14ef5">GC分析报告</a></p>
+<h4 id="g1-1">G1</h4>
+<p><img src="https://pic-bed-sz.oss-cn-shenzhen.aliyuncs.com/blog%2FJava%20%E8%99%9A%E6%8B%9F%E6%9C%BA%E5%8E%9F%E7%90%86%20%28%E5%85%AD%29%20ZGC%20%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86%E5%99%A8%2FG1%E5%B0%8F%E5%A0%86%E5%81%9C%E9%A1%BF%E6%97%B6%E9%97%B4.png" alt="G1小堆停顿时间.png"></p>
+<p><a href="https://gceasy.io/diamondgc-report.jsp?oTxnId_value=bcd74765-2660-473a-a0d9-27ff6c4076cb">GC分析报告</a></p>
+<h2 id="zgc-案例记录">ZGC 案例记录</h2>
+<h3 id="案例1zgc-大堆满了">案例1：ZGC 大堆满了</h3>
+<p>生产遇到 Java 进程阻塞导致 ZGC 大堆被堆满，发生了一些有趣的事情：</p>
+<ul>
+<li>
+<p>停顿时间变短，但是停顿频率变大
+<img src="https://pic-bed-sz.oss-cn-shenzhen.aliyuncs.com/blog%2FJava%20%E8%99%9A%E6%8B%9F%E6%9C%BA%E5%8E%9F%E7%90%86%20%28%E5%85%AD%29%20ZGC%20%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86%E5%99%A8%2FZGC%E5%A4%A7%E5%A0%86%E6%BB%A1%E5%90%8E%E5%81%9C%E9%A1%BF%E6%97%B6%E9%97%B4%E5%9B%BE.png" alt="ZGC大堆满后停顿时间图.png"></p>
+</li>
+<li>
+<p>并发阶段时间变长
+<img src="https://pic-bed-sz.oss-cn-shenzhen.aliyuncs.com/blog%2FJava%20%E8%99%9A%E6%8B%9F%E6%9C%BA%E5%8E%9F%E7%90%86%20%28%E5%85%AD%29%20ZGC%20%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86%E5%99%A8%2FZGC%E5%A4%A7%E5%A0%86%E6%BB%A1%E5%90%8E%E5%B9%B6%E5%8F%91%E6%97%B6%E9%97%B4%E5%9B%BE.png" alt="ZGC大堆满后并发时间图.png"></p>
+</li>
+<li>
+<p>服务器的用户态CPU占用很高
+<img src="https://pic-bed-sz.oss-cn-shenzhen.aliyuncs.com/blog%2FJava%20%E8%99%9A%E6%8B%9F%E6%9C%BA%E5%8E%9F%E7%90%86%20%28%E5%85%AD%29%20ZGC%20%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86%E5%99%A8%2FZGC%E5%A4%A7%E5%A0%86%E6%BB%A1%E5%90%8ECPU%E5%8D%A0%E7%94%A8%E5%9B%BE.png" alt="ZGC大堆满后CPU占用图.png"></p>
+</li>
+</ul>
+<p>结论是：ZGC 停顿阶段主要是扫描根节点，最大停顿时间都不会超过 10ms，没有传统收集器的 Full GC 阶段，堆满的时候会增加并发阶段时间，与应用线程形成 CPU 资源竞争。</p>
+<h2 id="参考资料">参考资料</h2>
+<ul>
+<li><a href="http://cr.openjdk.java.net/~pliden/slides/ZGC-Jfokus-2018.pdf">ZGC-Jfokus-2018</a>：本文大部分内容参考这个PPT。PPT 对应的视频在这 <a href="https://www.youtube.com/watch?v=tShc0dyFtgw">https://www.youtube.com/watch?v=tShc0dyFtgw</a></li>
+<li><a href="https://tech.meituan.com/2020/08/06/new-zgc-practice-in-meituan.html">新一代垃圾回收器ZGC的探索与实践</a>：美团出品，真是精品</li>
+<li><a href="http://cr.openjdk.java.net/~pliden/slides/ZGC-OracleDevLive-2020.pdf">ZGC-OracleDevLive-2020</a>：ZGC最新的一些展望以及性能分析</li>
+<li><a href="https://wiki.openjdk.java.net/display/zgc/Main">ZGC</a>:官方文档右侧有很多PPT和油管视频</li>
+</ul>
+              
+
+            </div>
+          </div>
+          <div id="post-footer" class="post-footer main-content-wrap">
+            
+              
+                
+                
+                  <div class="post-footer-tags">
+                    <span class="text-color-light text-small">标签</span><br/>
+                    
+  <a class="tag tag--primary tag--small" href="https://bayareageek.github.io/tags/jvm/">JVM</a>
+
+  <a class="tag tag--primary tag--small" href="https://bayareageek.github.io/tags/%E5%9E%83%E5%9C%BE%E5%9B%9E%E6%94%B6%E5%99%A8/">垃圾回收器</a>
+
+                  </div>
+                
+              
+            
+            <div class="post-actions-wrap">
+  
+      <nav >
+        <ul class="post-actions post-action-nav">
+          
+            <li class="post-action">
+              
+                <a class="post-action-btn btn btn--disabled">
+              
+                  <i class="fa fa-angle-left"></i>
+                  <span class="hide-xs hide-sm text-small icon-ml">下一篇</span>
+                </a>
+            </li>
+            <li class="post-action">
+              
+                <a class="post-action-btn btn btn--default tooltip--top" href="https://bayareageek.github.io/post/java-%E8%99%9A%E6%8B%9F%E6%9C%BA%E5%8E%9F%E7%90%86-5-g1%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86%E5%99%A8%E6%B7%B1%E5%85%A5/" data-tooltip="Java 虚拟机原理 (五) G1垃圾收集器深入" aria-label="上一篇: Java 虚拟机原理 (五) G1垃圾收集器深入">
+              
+                  <span class="hide-xs hide-sm text-small icon-mr">上一篇</span>
+                  <i class="fa fa-angle-right"></i>
+                </a>
+            </li>
+          
+        </ul>
+      </nav>
+    <ul class="post-actions post-action-share" >
+      
+        <li class="post-action hide-lg hide-md hide-sm">
+          <a class="post-action-btn btn btn--default btn-open-shareoptions" href="#btn-open-shareoptions" aria-label="分享这个帖子">
+            <i class="fa fa-share-alt" aria-hidden="true"></i>
+          </a>
+        </li>
+        
+          <li class="post-action hide-xs">
+            <a class="post-action-btn btn btn--default" target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://bayareageek.github.io/post/java-%E8%99%9A%E6%8B%9F%E6%9C%BA%E5%8E%9F%E7%90%86-6-zgc-%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86%E5%99%A8/" title="分享到 %s Facebook" aria-label="分享到 %s Facebook">
+              <i class="fab fa-facebook-square" aria-hidden="true"></i>
+            </a>
+          </li>
+        
+          <li class="post-action hide-xs">
+            <a class="post-action-btn btn btn--default" target="new" href="https://twitter.com/intent/tweet?text=https://bayareageek.github.io/post/java-%E8%99%9A%E6%8B%9F%E6%9C%BA%E5%8E%9F%E7%90%86-6-zgc-%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86%E5%99%A8/" title="分享到 %s Twitter" aria-label="分享到 %s Twitter">
+              <i class="fab fa-twitter" aria-hidden="true"></i>
+            </a>
+          </li>
+        
+          <li class="post-action hide-xs">
+            <a class="post-action-btn btn btn--default" target="new" href="https://plus.google.com/share?url=https://bayareageek.github.io/post/java-%E8%99%9A%E6%8B%9F%E6%9C%BA%E5%8E%9F%E7%90%86-6-zgc-%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86%E5%99%A8/" title="分享到 %s Google&#43;" aria-label="分享到 %s Google&#43;">
+              <i class="fab fa-google-plus" aria-hidden="true"></i>
+            </a>
+          </li>
+        
+      
+      
+        <li class="post-action">
+          <a class="post-action-btn btn btn--default" href="#gitalk" aria-label="发表评论">
+            <i class="fa fa-comment"></i>
+          </a>
+        </li>
+      
+      <li class="post-action">
+        
+          <a class="post-action-btn btn btn--default" href="#" aria-label="回到顶部">
+        
+          <i class="fa fa-list" aria-hidden="true"></i>
+        </a>
+      </li>
+    </ul>
+  
+</div>
+
+            
+  
+    <div id="gitalk">
+      <noscript>Please enable JavaScript to view the comments powered by Gitalk.</noscript>
+    </div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gitalk/1.7.2/gitalk.min.js" integrity="sha512-EcTCcXV46teiNwe0VcnM5A038tcY+BaQYO4nW6Gh2i7v4/HjBVg7xx3+JBLl9WofDds//INJAiEGAtdgr8PWyA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script type="text/javascript">
+      (function() {
+        if (["localhost", "127.0.0.1"].indexOf(window.location.hostname) != -1) {
+          document.getElementById('gitalk').innerHTML = 'Gitalk comments not available by default when the website is previewed locally.';
+          return;
+        }
+        new Gitalk({
+          clientID: '',
+          clientSecret: '',
+          repo: 'bayareageek.github.io',
+          owner: 'bayareageek',
+          admin: ['bayareageek'],
+          id: '\/post\/java-%E8%99%9A%E6%8B%9F%E6%9C%BA%E5%8E%9F%E7%90%86-6-zgc-%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86%E5%99%A8\/',
+          ...{"distractionfreemode":false,"enablehotkey":true,"language":"zh-CN","pagerdirection":"first","perpage":15}
+        }).render('gitalk')
+      })()
+    </script>
+  
+
+
+          </div>
+        </article>
+        <footer id="footer" class="main-content-wrap">
+  <span class="copyrights">
+    &copy; 2021 湾区极客. All Rights Reserved
+  </span>
+</footer>
+
+      </div>
+      <div id="bottom-bar" class="post-bottom-bar" data-behavior="5">
+        <div class="post-actions-wrap">
+  
+      <nav >
+        <ul class="post-actions post-action-nav">
+          
+            <li class="post-action">
+              
+                <a class="post-action-btn btn btn--disabled">
+              
+                  <i class="fa fa-angle-left"></i>
+                  <span class="hide-xs hide-sm text-small icon-ml">下一篇</span>
+                </a>
+            </li>
+            <li class="post-action">
+              
+                <a class="post-action-btn btn btn--default tooltip--top" href="https://bayareageek.github.io/post/java-%E8%99%9A%E6%8B%9F%E6%9C%BA%E5%8E%9F%E7%90%86-5-g1%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86%E5%99%A8%E6%B7%B1%E5%85%A5/" data-tooltip="Java 虚拟机原理 (五) G1垃圾收集器深入" aria-label="上一篇: Java 虚拟机原理 (五) G1垃圾收集器深入">
+              
+                  <span class="hide-xs hide-sm text-small icon-mr">上一篇</span>
+                  <i class="fa fa-angle-right"></i>
+                </a>
+            </li>
+          
+        </ul>
+      </nav>
+    <ul class="post-actions post-action-share" >
+      
+        <li class="post-action hide-lg hide-md hide-sm">
+          <a class="post-action-btn btn btn--default btn-open-shareoptions" href="#btn-open-shareoptions" aria-label="分享这个帖子">
+            <i class="fa fa-share-alt" aria-hidden="true"></i>
+          </a>
+        </li>
+        
+          <li class="post-action hide-xs">
+            <a class="post-action-btn btn btn--default" target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://bayareageek.github.io/post/java-%E8%99%9A%E6%8B%9F%E6%9C%BA%E5%8E%9F%E7%90%86-6-zgc-%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86%E5%99%A8/" title="分享到 %s Facebook" aria-label="分享到 %s Facebook">
+              <i class="fab fa-facebook-square" aria-hidden="true"></i>
+            </a>
+          </li>
+        
+          <li class="post-action hide-xs">
+            <a class="post-action-btn btn btn--default" target="new" href="https://twitter.com/intent/tweet?text=https://bayareageek.github.io/post/java-%E8%99%9A%E6%8B%9F%E6%9C%BA%E5%8E%9F%E7%90%86-6-zgc-%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86%E5%99%A8/" title="分享到 %s Twitter" aria-label="分享到 %s Twitter">
+              <i class="fab fa-twitter" aria-hidden="true"></i>
+            </a>
+          </li>
+        
+          <li class="post-action hide-xs">
+            <a class="post-action-btn btn btn--default" target="new" href="https://plus.google.com/share?url=https://bayareageek.github.io/post/java-%E8%99%9A%E6%8B%9F%E6%9C%BA%E5%8E%9F%E7%90%86-6-zgc-%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86%E5%99%A8/" title="分享到 %s Google&#43;" aria-label="分享到 %s Google&#43;">
+              <i class="fab fa-google-plus" aria-hidden="true"></i>
+            </a>
+          </li>
+        
+      
+      
+        <li class="post-action">
+          <a class="post-action-btn btn btn--default" href="#gitalk" aria-label="发表评论">
+            <i class="fa fa-comment"></i>
+          </a>
+        </li>
+      
+      <li class="post-action">
+        
+          <a class="post-action-btn btn btn--default" href="#" aria-label="回到顶部">
+        
+          <i class="fa fa-list" aria-hidden="true"></i>
+        </a>
+      </li>
+    </ul>
+  
+</div>
+
+      </div>
+      
+<div id="share-options-bar" class="share-options-bar" data-behavior="5">
+  <i id="btn-close-shareoptions" class="fa fa-times"></i>
+  <ul class="share-options">
+    
+      <li class="share-option">
+        <a class="share-option-btn" target="new" href="https://www.facebook.com/sharer/sharer.php?u=https%3A%2F%2Fbayareageek.github.io%2Fpost%2Fjava-%25E8%2599%259A%25E6%258B%259F%25E6%259C%25BA%25E5%258E%259F%25E7%2590%2586-6-zgc-%25E5%259E%2583%25E5%259C%25BE%25E6%2594%25B6%25E9%259B%2586%25E5%2599%25A8%2F" aria-label="分享到 %s Facebook">
+          <i class="fab fa-facebook-square" aria-hidden="true"></i><span>分享到 Facebook</span>
+        </a>
+      </li>
+    
+      <li class="share-option">
+        <a class="share-option-btn" target="new" href="https://twitter.com/intent/tweet?text=https%3A%2F%2Fbayareageek.github.io%2Fpost%2Fjava-%25E8%2599%259A%25E6%258B%259F%25E6%259C%25BA%25E5%258E%259F%25E7%2590%2586-6-zgc-%25E5%259E%2583%25E5%259C%25BE%25E6%2594%25B6%25E9%259B%2586%25E5%2599%25A8%2F" aria-label="分享到 %s Twitter">
+          <i class="fab fa-twitter" aria-hidden="true"></i><span>分享到 Twitter</span>
+        </a>
+      </li>
+    
+      <li class="share-option">
+        <a class="share-option-btn" target="new" href="https://plus.google.com/share?url=https%3A%2F%2Fbayareageek.github.io%2Fpost%2Fjava-%25E8%2599%259A%25E6%258B%259F%25E6%259C%25BA%25E5%258E%259F%25E7%2590%2586-6-zgc-%25E5%259E%2583%25E5%259C%25BE%25E6%2594%25B6%25E9%259B%2586%25E5%2599%25A8%2F" aria-label="分享到 %s Google&#43;">
+          <i class="fab fa-google-plus" aria-hidden="true"></i><span>分享到 Google&#43;</span>
+        </a>
+      </li>
+    
+  </ul>
+</div>
+<div id="share-options-mask" class="share-options-mask"></div>
+
+    </div>
+    
+    <div id="about">
+  <div id="about-card">
+    <div id="about-btn-close">
+      <i class="fa fa-times"></i>
+    </div>
+    
+      <img id="about-card-picture" src="https://bayareageek.github.io/images/advar.jpg" alt="作者的图片" />
+    
+    <h4 id="about-card-name">湾区极客</h4>
+    
+      <div id="about-card-bio">大湾区技术极客聚集地</div>
+    
+    
+      <div id="about-card-job">
+        <i class="fa fa-briefcase"></i>
+        <br/>
+        研发工程师
+      </div>
+    
+    
+      <div id="about-card-location">
+        <i class="fa fa-map-marker-alt"></i>
+        <br/>
+        中国·大湾区
+      </div>
+    
+  </div>
+</div>
+
+    
+
+    
+  
+    
+      <div id="cover" style="background-image:url('https://bayareageek.github.io/images/cover/program-cover.jpg');"></div>
+    
+  
+
+
+    
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js" integrity="sha512-894YE6QWD5I59HgZOGReFYm4dnWc1Qt5NtvYSaNcOP+u1T9qYdvdihz0PPSiiqn/+/3e7Jo4EaG7TubfWGUrMQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.1.0/highlight.min.js" integrity="sha512-z+/WWfyD5tccCukM4VvONpEtLmbAm5LDu7eKiyMQJ9m7OfPEDL7gENyDRL3Yfe8XAuGsS2fS4xSMnl6d30kqGQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/fancybox/3.5.7/jquery.fancybox.min.js" integrity="sha512-uURl+ZXMBrF4AwGaWmEetzrd+J5/8NRkWAvJx5sbPSSuOb0bZLqf+tOzniObO00BjHa/dD7gub9oCGMLPQHtQA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+
+
+<script src="https://bayareageek.github.io/js/script-8lglxdix2nqhalxxm2bujhkcc8cctdrd5o5axonwhfzx2zqrer5facyn8.min.js"></script>
+
+
+  
+    <script async crossorigin="anonymous" defer integrity="sha512-gE8KAQyFIzV1C9+GZ8TKJHZS2s+n7EjNtC+IMRn1l5+WYJTHOODUM6JSjZhFhqXmc7bG8Av6XXpckA4tYhflnw==" src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.1.0/languages/apache.min.js"></script>
+  
+
+  
+    <script async crossorigin="anonymous" defer integrity="sha512-EWROca+bote+7Oaaar1F6y74iZj1r1F9rm/ly7o+/FwJopbBaWtsFDmaKoZDd3QiGU2pGacBirHJNivmGLYrow==" src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.1.0/languages/go.min.js"></script>
+  
+
+  
+    <script async crossorigin="anonymous" defer integrity="sha512-GDVzAn0wpx1yVtQsRWmFc6PhJiLBPdUic+h4GWgljBh904O3JU10fk9EKNpVyIoPqkFn54rgL2QBG4BmUTMpiQ==" src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.1.0/languages/http.min.js"></script>
+  
+
+  
+    <script async crossorigin="anonymous" defer integrity="sha512-UgZlma8NzkrDb/NWgmLIcTrH7i/CSnLLDRFqCSNF5NGPpjKmzyM25qcoXGOup8+cDakKyaiTDd7N4dyH4YT+IA==" src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.1.0/languages/less.min.js"></script>
+  
+
+  
+    <script async crossorigin="anonymous" defer integrity="sha512-lot9koe73sfXIrUvIPM/UEhuMciN56RPyBdOyZgfO53P2lkWyyXN7J+njcxIIBRV+nVDQeiWtiXg+bLAJZDTfg==" src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.1.0/languages/nginx.min.js"></script>
+  
+
+  
+    <script async crossorigin="anonymous" defer integrity="sha512-Zd3e7XxHP00TD0Imr0PIfeM0fl0v95kMWuhyAS3Wn1UTSXTkz0OhtRgBAr4JlmADRgiXr4x7lpeUdqaGN8xIog==" src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.1.0/languages/puppet.min.js"></script>
+  
+
+  
+    <script async crossorigin="anonymous" defer integrity="sha512-qtqDO052iXMSP+5d/aE/jMtL9vIIGvONgTJziC2K/ZIB1yEGa55WVxGE9/08rSQ62EoDifS9SWVGZ7ihSLhzMA==" src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.1.0/languages/scss.min.js"></script>
+  
+
+  
+    <script async crossorigin="anonymous" defer integrity="sha512-1NmkjnEDnwwwcu28KoQF8vs3oaPFokQHbmbtwGhFfeDsQZtVFI8zW2aE9O8yMYdpdyKV/5blE4pSWw4Z/Sv97w==" src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.1.0/languages/stylus.min.js"></script>
+  
+
+  
+    <script async crossorigin="anonymous" defer integrity="sha512-B2wSfruPjr8EJL6IIzQr1eAuDwrsfIfccNf/LCEdxELCgC/S/ZMt/Uvk80aD79m7IqOqW+Sw8nbkvha20yZpzg==" src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.1.0/languages/swift.min.js"></script>
+  
+
+  
+    <script async crossorigin="anonymous" defer integrity="sha512-28oDiQZGKUVN6wQ7PSLPNipOcmkCALXKwOi7bnkyFf8QiMZQxG9EQoy/iiNx6Zxj2cG2SbVa4dXKigQhu7GiFw==" src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.1.0/languages/yaml.min.js"></script>
+  
+
+
+<script>
+$(document).ready(function() {
+  hljs.configure({ classPrefix: '', useBR: false });
+  $('pre.code-highlight > code, pre > code').each(function(i, block) {
+    if (!$(this).hasClass('codeblock')) {
+      $(this).addClass('codeblock');
+    }
+    hljs.highlightBlock(block);
+  });
+});
+</script>
+
+
+
+
+    
+  </body>
+</html>
+

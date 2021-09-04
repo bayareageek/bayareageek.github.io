@@ -1,0 +1,1158 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+  <head>
+    
+    <script type="application/ld+json">
+
+{  
+  "@context":"http://schema.org",
+  "@type":"Website",
+  "@id":"https:\/\/bayareageek.github.io\/",
+  "author": {
+    "@type": "Person",
+    "name": "湾区极客",
+    
+    "image": "https://bayareageek.github.io/images/advar.jpg"
+    
+  },
+  "name":"",
+  "description":"\u003cp\u003eJava 虚拟机技术是每个 Java 开发工程师都应该深入掌握的。本系列文章将深入介绍 JVM 相关技术，主要包括内存划分、对象创建回收与分配以及垃圾收集三大部分。本系列文章将力求全面概要地汇总核心知识点，并使知识点串联成面，以方便学习、工作以及备忘复习。本文将介绍第三部分——垃圾收集。\u003c\/p\u003e",
+  "url":"https:\/\/bayareageek.github.io\/post\/java-%E8%99%9A%E6%8B%9F%E6%9C%BA%E5%8E%9F%E7%90%86-3-%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86\/",
+  "keywords":"[Java, 技术, 生活]"
+}
+
+</script>
+    <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="generator" content="Hugo 0.80.0 with theme Tranquilpeak 0.5.1-BETA">
+<meta name="author" content="湾区极客">
+<meta name="keywords" content="Java, 技术, 生活">
+<meta name="description" content="Java 虚拟机技术是每个 Java 开发工程师都应该深入掌握的。本系列文章将深入介绍 JVM 相关技术，主要包括内存划分、对象创建回收与分配以及垃圾收集三大部分。本系列文章将力求全面概要地汇总核心知识点，并使知识点串联成面，以方便学习、工作以及备忘复习。本文将介绍第三部分——垃圾收集。">
+
+
+<meta property="og:description" content="Java 虚拟机技术是每个 Java 开发工程师都应该深入掌握的。本系列文章将深入介绍 JVM 相关技术，主要包括内存划分、对象创建回收与分配以及垃圾收集三大部分。本系列文章将力求全面概要地汇总核心知识点，并使知识点串联成面，以方便学习、工作以及备忘复习。本文将介绍第三部分——垃圾收集。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Java 虚拟机原理 (三) 垃圾收集">
+<meta name="twitter:title" content="Java 虚拟机原理 (三) 垃圾收集">
+<meta property="og:url" content="https://bayareageek.github.io/post/java-%E8%99%9A%E6%8B%9F%E6%9C%BA%E5%8E%9F%E7%90%86-3-%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86/">
+<meta property="twitter:url" content="https://bayareageek.github.io/post/java-%E8%99%9A%E6%8B%9F%E6%9C%BA%E5%8E%9F%E7%90%86-3-%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86/">
+<meta property="og:site_name" content="">
+<meta property="og:description" content="Java 虚拟机技术是每个 Java 开发工程师都应该深入掌握的。本系列文章将深入介绍 JVM 相关技术，主要包括内存划分、对象创建回收与分配以及垃圾收集三大部分。本系列文章将力求全面概要地汇总核心知识点，并使知识点串联成面，以方便学习、工作以及备忘复习。本文将介绍第三部分——垃圾收集。">
+<meta name="twitter:description" content="Java 虚拟机技术是每个 Java 开发工程师都应该深入掌握的。本系列文章将深入介绍 JVM 相关技术，主要包括内存划分、对象创建回收与分配以及垃圾收集三大部分。本系列文章将力求全面概要地汇总核心知识点，并使知识点串联成面，以方便学习、工作以及备忘复习。本文将介绍第三部分——垃圾收集。">
+<meta property="og:locale" content="zh-cn">
+
+  
+    <meta property="article:published_time" content="2021-01-09T22:50:07">
+  
+  
+    <meta property="article:modified_time" content="2021-01-09T22:50:07">
+  
+  
+  
+    
+      <meta property="article:section" content="Java">
+    
+  
+  
+    
+      <meta property="article:tag" content="Java">
+    
+      <meta property="article:tag" content="JVM">
+    
+      <meta property="article:tag" content="垃圾收集器">
+    
+  
+
+
+<meta name="twitter:card" content="summary">
+
+
+
+
+
+
+
+  <meta property="og:image" content="https://bayareageek.github.io/images/advar.jpg">
+  <meta property="twitter:image" content="https://bayareageek.github.io/images/advar.jpg">
+
+
+
+
+
+  <meta property="og:image" content="https://pic-bed-sz.oss-cn-shenzhen.aliyuncs.com/blog%2FJava%20%E8%99%9A%E6%8B%9F%E6%9C%BA%E5%8E%9F%E7%90%86%E4%B9%8B%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86%2F%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86%E9%A6%96%E9%A1%B5%E6%80%9D%E7%BB%B4%E5%AF%BC%E5%9B%BE.jpg">
+  <meta property="twitter:image" content="https://pic-bed-sz.oss-cn-shenzhen.aliyuncs.com/blog%2FJava%20%E8%99%9A%E6%8B%9F%E6%9C%BA%E5%8E%9F%E7%90%86%E4%B9%8B%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86%2F%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86%E9%A6%96%E9%A1%B5%E6%80%9D%E7%BB%B4%E5%AF%BC%E5%9B%BE.jpg">
+
+
+    <title>Java 虚拟机原理 (三) 垃圾收集</title>
+
+    <link rel="icon" href="https://bayareageek.github.io/favicon.png">
+    
+
+    
+
+    <link rel="canonical" href="https://bayareageek.github.io/post/java-%E8%99%9A%E6%8B%9F%E6%9C%BA%E5%8E%9F%E7%90%86-3-%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86/">
+
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" integrity="sha512-iBBXm8fW90+nuLcSKlbmrPcLa0OT92xO1BIsZ+ywDWZCvqsWgccV3gFoRBv0z+8dLJgyAHIhR35VZc2oM/gI1w==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/fancybox/3.5.7/jquery.fancybox.min.css" integrity="sha512-H9jrZiiopUdsLpg94A333EfumgUBpO9MdbxStdeITo+KEIMaNfHNvwyjjDJb+ERPaRS6DpyRlKbvPUasNItRyw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/gitalk/1.7.2/gitalk.css" integrity="sha512-MLcK/YRapzET1qTBXrOiZE6bGBgtATMo2bIyalVJ8EKDEGNoeA3SPQkvWAR0zNS650YG13ocXBMeioDuZcSRuQ==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    
+    
+    
+    <link rel="stylesheet" href="https://bayareageek.github.io/css/style-2w2urpokyukbsouppglitcyxngrsa0pcm58rrm5mqo3ieqo6bkvr3cz9nvf.min.css" />
+    
+    
+
+    
+      
+    
+    
+  </head>
+
+  <body>
+    <div id="blog">
+      <header id="header" data-behavior="5">
+  <i id="btn-open-sidebar" class="fa fa-lg fa-bars"></i>
+  <div class="header-title">
+    <a class="header-title-link" href="https://bayareageek.github.io/" aria-label="去首页"></a>
+  </div>
+  
+    
+      <a class="header-right-picture "
+         href="https://bayareageek.github.io/#about" aria-label="打开链接: /#about">
+    
+    
+    
+      
+        <img class="header-picture" src="https://bayareageek.github.io/images/advar.jpg" alt="作者的图片" />
+      
+    
+    </a>
+  
+</header>
+
+      <nav id="sidebar" data-behavior="5">
+  <div class="sidebar-container">
+    
+      <div class="sidebar-profile">
+        <a href="https://bayareageek.github.io/#about" aria-label="阅读有关作者的更多信息">
+          <img class="sidebar-profile-picture" src="https://bayareageek.github.io/images/advar.jpg" alt="作者的图片" />
+        </a>
+        <h4 class="sidebar-profile-name">湾区极客</h4>
+        
+          <h5 class="sidebar-profile-bio">大湾区技术极客聚集地</h5>
+        
+      </div>
+    
+    <ul class="sidebar-buttons">
+      
+  <li class="sidebar-button">
+    
+      <a class="sidebar-button-link " href="https://bayareageek.github.io/" title="Home">
+    
+      <i class="sidebar-button-icon fas fa-lg fa-home" aria-hidden="true"></i>
+      
+      <span class="sidebar-button-desc">首页</span>
+    </a>
+  </li>
+
+  <li class="sidebar-button">
+    
+      <a class="sidebar-button-link " href="https://bayareageek.github.io/categories" title="Categories">
+    
+      <i class="sidebar-button-icon fas fa-lg fa-bookmark" aria-hidden="true"></i>
+      
+      <span class="sidebar-button-desc">分类</span>
+    </a>
+  </li>
+
+  <li class="sidebar-button">
+    
+      <a class="sidebar-button-link " href="https://bayareageek.github.io/tags" title="Tags">
+    
+      <i class="sidebar-button-icon fas fa-lg fa-tags" aria-hidden="true"></i>
+      
+      <span class="sidebar-button-desc">标签</span>
+    </a>
+  </li>
+
+  <li class="sidebar-button">
+    
+      <a class="sidebar-button-link " href="https://bayareageek.github.io/archives" title="Archives">
+    
+      <i class="sidebar-button-icon fas fa-lg fa-archive" aria-hidden="true"></i>
+      
+      <span class="sidebar-button-desc">归档</span>
+    </a>
+  </li>
+
+  <li class="sidebar-button">
+    
+      <a class="sidebar-button-link " href="https://bayareageek.github.io/#about" title="About">
+    
+      <i class="sidebar-button-icon fas fa-lg fa-question" aria-hidden="true"></i>
+      
+      <span class="sidebar-button-desc">关于</span>
+    </a>
+  </li>
+
+
+    </ul>
+    <ul class="sidebar-buttons">
+      
+  <li class="sidebar-button">
+    
+      <a class="sidebar-button-link " href="https://github.com/duval1024" target="_blank" rel="noopener" title="GitHub">
+    
+      <i class="sidebar-button-icon fab fa-lg fa-github" aria-hidden="true"></i>
+      
+      <span class="sidebar-button-desc">GitHub</span>
+    </a>
+  </li>
+
+
+    </ul>
+    <ul class="sidebar-buttons">
+      
+  <li class="sidebar-button">
+    
+      <a class="sidebar-button-link " href="https://bayareageek.github.io/index.xml" title="RSS">
+    
+      <i class="sidebar-button-icon fas fa-lg fa-rss" aria-hidden="true"></i>
+      
+      <span class="sidebar-button-desc">RSS</span>
+    </a>
+  </li>
+
+
+    </ul>
+  </div>
+</nav>
+
+      
+
+      <div id="main" data-behavior="5"
+        class="
+               hasCoverMetaIn
+               ">
+        <article class="post">
+          
+          
+            <div class="post-header main-content-wrap text-left">
+  
+    <h1 class="post-title">
+      Java 虚拟机原理 (三) 垃圾收集
+    </h1>
+  
+  
+  <div class="postShorten-meta post-meta">
+    
+      <time datetime="2021-01-09T22:50:07Z">
+        
+  
+  
+  
+  
+    2021-01-09
+  
+
+      </time>
+    
+    
+  
+  
+    <span>发布在</span>
+    
+      <a class="category-link" href="https://bayareageek.github.io/categories/java">Java</a>
+    
+  
+
+  </div>
+
+</div>
+          
+          <div class="post-content markdown">
+            <div class="main-content-wrap">
+              <p>Java 虚拟机技术是每个 Java 开发工程师都应该深入掌握的。本系列文章将深入介绍 JVM 相关技术，主要包括内存划分、对象创建回收与分配以及垃圾收集三大部分。本系列文章将力求全面概要地汇总核心知识点，并使知识点串联成面，以方便学习、工作以及备忘复习。本文将介绍第三部分——垃圾收集。</p>
+<p><img src="https://pic-bed-sz.oss-cn-shenzhen.aliyuncs.com/blog%2FJava%20%E8%99%9A%E6%8B%9F%E6%9C%BA%E5%8E%9F%E7%90%86%E4%B9%8B%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86%2F%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86%E9%A6%96%E9%A1%B5%E6%80%9D%E7%BB%B4%E5%AF%BC%E5%9B%BE.jpg" alt="垃圾收集思维导图"></p>
+<h1 id="垃圾收集算法">垃圾收集算法</h1>
+<ul>
+<li>标记清除算法
+<ul>
+<li>需要标记的对象非常多，效率一般不高</li>
+<li>内存容易导致空间碎片化问题</li>
+</ul>
+</li>
+<li>标记整理算法
+<ul>
+<li>在标记清除算法基础上，增加内存整理功能，避免碎片化的问题</li>
+<li>同样存在标记量大而效率不高的问题</li>
+</ul>
+</li>
+<li>标记复制算法
+<ul>
+<li>一般需要预留 Survivor 区域，导致空间利用率不高</li>
+<li>回收效率非常高</li>
+</ul>
+</li>
+<li>分代收集算法
+<ul>
+<li>常见的垃圾收集器都采用此法</li>
+</ul>
+</li>
+</ul>
+<h1 id="常见垃圾收集器">常见垃圾收集器</h1>
+<h2 id="经典垃圾收集器">经典垃圾收集器</h2>
+<ul>
+<li>
+<p>新生代收集器</p>
+<ul>
+<li>Serial New 收集器（-XX:+UseSerialGC）
+<blockquote>
+<p>新生代单线程垃圾收集器。</p>
+</blockquote>
+</li>
+<li>Parallel 收集器（-XX:+UseParallelGC）：
+<blockquote>
+<p>也称为 Parallel Scavenge收集器，可以理解为 Serial New 收集器的多线程版本。该垃圾收集器可与 Serial Old 以及 Parallel Old 两款收集器搭配使用。</p>
+</blockquote>
+</li>
+<li>ParNew 收集器（-XX:+UseParNewGC）
+<blockquote>
+<p>该垃圾收集器专门开发来与 CMS 收集器搭配使用，当然也可以与 Serial Old 垃圾收集器使用。</p>
+</blockquote>
+</li>
+</ul>
+</li>
+<li>
+<p>老年代收集器</p>
+<ul>
+<li>Serial Old 收集器（-XX:+UseSerialOldGC）</li>
+<li>Parallel Old 收集器（-XX:+UseParallelOldGC）
+<blockquote>
+<p>老年代并行垃圾收集器，仅与 Parallel 收集器搭配使用。</p>
+</blockquote>
+</li>
+<li>CMS 收集器（-XX:+UseConcMarkSweepGC）</li>
+</ul>
+</li>
+<li>
+<p>跨代收集器</p>
+<ul>
+<li>G1 收集器（-XX:+UseG1GC）</li>
+</ul>
+</li>
+</ul>
+<blockquote>
+<p>注意，在 jdk1.8.0_161 中测试发现 -XX:+UseSerialOldGC 参数已经不可用。目前各个垃圾收集器之间的关系图如下：
+<img src="https://pic-bed-sz.oss-cn-shenzhen.aliyuncs.com/blog%2FJava%20%E8%99%9A%E6%8B%9F%E6%9C%BA%E5%8E%9F%E7%90%86%E4%B9%8B%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86%2F%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86%E5%99%A8%E4%B9%8B%E9%97%B4%E7%9A%84%E5%85%B3%E7%B3%BB.png" alt="垃圾收集器之间的关系.png">
+其中标红线表示 jdk1.8.0_161 之后推荐使用的搭配关系，此外 CMS 在并发失败的时候还会退化为 Serial Old。
+从 JDK 源码也可以看出端倪:
+<img src="https://pic-bed-sz.oss-cn-shenzhen.aliyuncs.com/blog%2FJava%20%E8%99%9A%E6%8B%9F%E6%9C%BA%E5%8E%9F%E7%90%86%E4%B9%8B%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86%2Fcheck_gc_args" alt="check_gc_args"></p>
+</blockquote>
+<h3 id="cms-垃圾收集器">CMS 垃圾收集器</h3>
+<h4 id="简介">简介</h4>
+<p>CMS (Concurrent Mark Sweep)是老年代垃圾收集器，内部使用标记清除算法。其一般与 ParNew 搭配使用。CMS 的回收模式一般分为两种background 和 foreground 两种模式。background模式下，一般划分为以下几个阶段：</p>
+<p><img src="https://pic-bed-sz.oss-cn-shenzhen.aliyuncs.com/blog%2FJava%20%E8%99%9A%E6%8B%9F%E6%9C%BA%E5%8E%9F%E7%90%86%E4%B9%8B%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86%2FCMS%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86%E5%99%A8%E5%9B%9E%E6%94%B6%E9%98%B6%E6%AE%B5.png" alt="CMS垃圾收集器回收阶段.png"></p>
+<ul>
+<li><strong>初始标记</strong>：快速标记 GC Roots 直接引用的对象，该阶段为 Stop The World 过程；</li>
+<li><strong>并发标记</strong>：从 GC Roots 直接引用对象出发遍历其他存活对象，该过程与用户线程并发运行，因此可能会有已被标记的对象状态发生变化。该过程持续时间会比较长，但不会 STW；</li>
+<li><strong>重新标记</strong>：修正并发标记阶段状态发生变动的对象，该阶段停顿时间会比初始标记稍长，但远比并发标记要短暂。另外，CMS 主要采用了三色标记的增量更新算法实现重新标记；</li>
+<li><strong>并发清理</strong>：清理未标记的对象，该阶段与用户线程并发运行。同时根据三色标记原理，该阶段新增对象都会被标记为黑色而不必清理。</li>
+</ul>
+<p>另外一种模式是 foreground ，该模式下 CMS 将会退化为与 Serial Old 相同的收集算法，也就是采用单线程串行 GC 模式，STW 时间超长，有时会长达十几秒。这种模式下才能准确称为 Full GC。</p>
+<p>CMS 存在几个缺点：</p>
+<ul>
+<li>对 CPU 资源敏感，会与应用程序争抢 CPU 资源；</li>
+<li>并发标记和并发清理阶段会产生浮动垃圾，需要等待下一次 GC 过程才能回收；</li>
+<li>标记清除算法会产生大量空间碎片（但可通过 -XX:+UseCMSCompactAtFullCollection 参数让 JVM 清理后进行内存整理）；</li>
+<li>在并发标记和并发清理阶段，GC 线程与用户线程并发执行，此时如果再次触发 Major GC，会引起 “concurrent mode failure”，此时会进入 STW 状态，并退化为使用 Serial Old 垃圾收集器来回收。</li>
+</ul>
+<h4 id="常用调优参数">常用调优参数：</h4>
+<table>
+<thead>
+<tr>
+<th>参数</th>
+<th>参数含义</th>
+<th>默认值</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>-XX:+UseConcMarkSweepGC</td>
+<td>启用 CMS 收集器</td>
+<td>默认搭配 ParNew 新生代收集器</td>
+</tr>
+<tr>
+<td>-XX:ConcGCThreads</td>
+<td>并发的 GC 线程数量</td>
+<td>默认值（CPU核心数+3）/ 4</td>
+</tr>
+<tr>
+<td>-XX:+UseCMSCompactAtFullCollection</td>
+<td>Full GC 后做压缩整理以减少内存碎片</td>
+<td></td>
+</tr>
+<tr>
+<td>-XX:CMSFullGCsBeforeCompaction</td>
+<td>指定多少次 Full GC 后压缩整理一次</td>
+<td>默认值是0，表示每次 Full GC 都会压缩一次</td>
+</tr>
+<tr>
+<td>-XX:CMSInitiatingOccupancyFraction</td>
+<td>当老年代使用达到该比例会触发 Full GC</td>
+<td>默认值92（百分比）</td>
+</tr>
+<tr>
+<td>-XX:+UseCMSInitiatingOccupancyOnly</td>
+<td>表示仅使用设定的回收阈值(这里指CMSInitiatingOccupancyFraction)，如果不指定，JVM仅在第一次使用设定阈值，后续则自动调整，所以一般设置了回收阈值都会同时设置该值。</td>
+<td></td>
+</tr>
+<tr>
+<td>-XX:+CMSScavengeBeforeRemark</td>
+<td>在 Full GC 前执行一次 Minor GC，目的是减少老年代对年轻代的引用，从而降低标记阶段的开销</td>
+<td></td>
+</tr>
+<tr>
+<td>-XX:+CMSParallelInitialMarkEnabled</td>
+<td>表示在初始标记的时候多线程执行从而缩短 STW</td>
+<td></td>
+</tr>
+<tr>
+<td>-XX:+CMSParallelRemarkEnabled</td>
+<td>表示在重新标记的时候多线程执行从而缩短 STW</td>
+<td>默认开启</td>
+</tr>
+</tbody>
+</table>
+<h4 id="gc-日志案例">GC 日志案例：</h4>
+<blockquote>
+<p>运行参数： -Xms50m -Xmx50m -XX:+UseConcMarkSweepGC -XX:MetaspaceSize=64m -XX:MaxMetaspaceSize=128M -XX:+PrintGCDetails -XX:CMSInitiatingOccupancyFraction=92 -XX:+UseCMSInitiatingOccupancyOnly</p>
+</blockquote>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#75715e">## 初始标记</span>
+<span style="color:#f92672">[</span>GC <span style="color:#f92672">(</span>CMS Initial Mark<span style="color:#f92672">)</span> <span style="color:#f92672">[</span><span style="color:#ae81ff">1</span> CMS-initial-mark: 30614K<span style="color:#f92672">(</span>34176K<span style="color:#f92672">)]</span> 34916K<span style="color:#f92672">(</span>49536K<span style="color:#f92672">)</span>, 0.0015545 secs<span style="color:#f92672">]</span> <span style="color:#f92672">[</span>Times: user<span style="color:#f92672">=</span>0.01 sys<span style="color:#f92672">=</span>0.00, real<span style="color:#f92672">=</span>0.01 secs<span style="color:#f92672">]</span> 
+<span style="color:#75715e">## 并发标记</span>
+<span style="color:#f92672">[</span>CMS-concurrent-mark-start<span style="color:#f92672">]</span>
+<span style="color:#f92672">[</span>CMS-concurrent-mark: 0.014/0.014 secs<span style="color:#f92672">]</span> <span style="color:#f92672">[</span>Times: user<span style="color:#f92672">=</span>0.01 sys<span style="color:#f92672">=</span>0.00, real<span style="color:#f92672">=</span>0.01 secs<span style="color:#f92672">]</span> 
+<span style="color:#f92672">[</span>CMS-concurrent-preclean-start<span style="color:#f92672">]</span>
+<span style="color:#f92672">[</span>CMS-concurrent-preclean: 0.000/0.000 secs<span style="color:#f92672">]</span> <span style="color:#f92672">[</span>Times: user<span style="color:#f92672">=</span>0.00 sys<span style="color:#f92672">=</span>0.00, real<span style="color:#f92672">=</span>0.00 secs<span style="color:#f92672">]</span> 
+<span style="color:#f92672">[</span>CMS-concurrent-abortable-preclean-start<span style="color:#f92672">]</span>
+<span style="color:#f92672">[</span>CMS-concurrent-abortable-preclean: 0.000/0.000 secs<span style="color:#f92672">]</span> <span style="color:#f92672">[</span>Times: user<span style="color:#f92672">=</span>0.00 sys<span style="color:#f92672">=</span>0.00, real<span style="color:#f92672">=</span>0.00 secs<span style="color:#f92672">]</span> 
+<span style="color:#75715e">## 重新标记（最终标记）</span>
+<span style="color:#f92672">[</span>GC <span style="color:#f92672">(</span>CMS Final Remark<span style="color:#f92672">)</span> <span style="color:#f92672">[</span>YG occupancy: <span style="color:#ae81ff">4302</span> K <span style="color:#f92672">(</span><span style="color:#ae81ff">15360</span> K<span style="color:#f92672">)][</span>Rescan <span style="color:#f92672">(</span>parallel<span style="color:#f92672">)</span> , 0.0008078 secs<span style="color:#f92672">][</span>weak refs processing, 0.0004334 secs<span style="color:#f92672">][</span>class unloading, 0.0038316 secs<span style="color:#f92672">][</span>scrub symbol table, 0.0038272 secs<span style="color:#f92672">][</span>scrub string table, 0.0003411 secs<span style="color:#f92672">][</span><span style="color:#ae81ff">1</span> CMS-remark: 30614K<span style="color:#f92672">(</span>34176K<span style="color:#f92672">)]</span> 34916K<span style="color:#f92672">(</span>49536K<span style="color:#f92672">)</span>, 0.0093542 secs<span style="color:#f92672">]</span> <span style="color:#f92672">[</span>Times: user<span style="color:#f92672">=</span>0.01 sys<span style="color:#f92672">=</span>0.00, real<span style="color:#f92672">=</span>0.01 secs<span style="color:#f92672">]</span> 
+<span style="color:#75715e">## 并发清理</span>
+<span style="color:#f92672">[</span>CMS-concurrent-sweep-start<span style="color:#f92672">]</span>
+<span style="color:#f92672">[</span>CMS-concurrent-sweep: 0.003/0.003 secs<span style="color:#f92672">]</span> <span style="color:#f92672">[</span>Times: user<span style="color:#f92672">=</span>0.00 sys<span style="color:#f92672">=</span>0.00, real<span style="color:#f92672">=</span>0.00 secs<span style="color:#f92672">]</span> 
+<span style="color:#75715e">## 并发重置</span>
+<span style="color:#f92672">[</span>CMS-concurrent-reset-start<span style="color:#f92672">]</span>
+<span style="color:#f92672">[</span>CMS-concurrent-reset: 0.000/0.000 secs<span style="color:#f92672">]</span> <span style="color:#f92672">[</span>Times: user<span style="color:#f92672">=</span>0.00 sys<span style="color:#f92672">=</span>0.00, real<span style="color:#f92672">=</span>0.00 secs<span style="color:#f92672">]</span> 
+
+</code></pre></div><p>主要看点：</p>
+<ul>
+<li>初始标记耗时非常短（0.0015545 secs），触发阈值约是90%（30614/34176≈90%），这值比参数指定值92%略小，但在预期之内；</li>
+<li>并发标记阶段不会 STW，用时相对较长（0.014 secs）；</li>
+<li>重新标记阶段默认就是多线程（Rescan (parallel)），也就是说 CMSParallelRemarkEnabled 默认开启；</li>
+</ul>
+<h4 id="常见调优思路">常见调优思路</h4>
+<p><a href="https://tech.meituan.com/2020/11/12/java-9-cms-gc.html">Java中9种常见的CMS GC问题分析与解决</a></p>
+<h3 id="g1-垃圾收集器">G1 垃圾收集器</h3>
+<h4 id="简介-1">简介</h4>
+<p>G1 垃圾收集器与 CMS 收集器非常相似，但存在本质的区别。读者可以先看下一篇<a href="https://blog.duval.top/2021/01/10/Java-%E8%99%9A%E6%8B%9F%E6%9C%BA%E5%8E%9F%E7%90%86-4-G1%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86%E5%99%A8%E5%85%A5%E9%97%A8/">《Java 虚拟机原理 (四) G1垃圾收集器入门》</a>进行了解，此处不再重复。</p>
+<p>下边直接来看 G1 的垃圾回收阶段图：</p>
+<p><img src="https://pic-bed-sz.oss-cn-shenzhen.aliyuncs.com/blog%2FJava%20%E8%99%9A%E6%8B%9F%E6%9C%BA%E5%8E%9F%E7%90%86%E4%B9%8B%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86%2FG1%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86%E9%98%B6%E6%AE%B5%E5%9B%BE.png" alt="G1垃圾收集阶段图.png"></p>
+<p>具体各个阶段总结如下：</p>
+<table>
+<thead>
+<tr>
+<th>回收阶段</th>
+<th>是否 STW</th>
+<th>过程</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>年轻代收集 (young gc)</td>
+<td>是（收集过程中复制移动动作是一个 STW 过程）</td>
+<td>1.使用复制算法，从 eden 区将存活对象转移到 survivor区；<!-- raw HTML omitted -->2.如果对象超过了老化阈值，则会被晋升到老年代区块中。</td>
+</tr>
+<tr>
+<td>初始标记（initial-mark)</td>
+<td>是</td>
+<td>1.当老年代占堆比重达到 IHOP 阈值（缺省45%），则会触发并发标记周期，并进入初始标记阶段；<!-- raw HTML omitted -->2.初始标记过程是伴随着一次年轻代收集同时完成的；<!-- raw HTML omitted -->3.该过程主要是标记那些引用了老年代对象的 Survivor 区块（也就是根区块）</td>
+</tr>
+<tr>
+<td>并发根区块扫描 (concurrent-root-scan)</td>
+<td>否</td>
+<td>1.扫描那些引用了老年代的 Suvivor 区块（根区块）并标记他们所引用的对象。<!-- raw HTML omitted -->2.这个阶段是和应用线程并行执行。这个阶段必须在下一次 young gc 发生之前完成。</td>
+</tr>
+<tr>
+<td>并发标记 (concurrent-mark)</td>
+<td>否</td>
+<td>1.在全堆范围内寻找存活对象；<!-- raw HTML omitted -->2.该过程与应用线程并行执行；<!-- raw HTML omitted -->3.这个阶段可以被年轻代垃圾收集过程所打断（也就是中间可以穿插多个 young gc）</td>
+</tr>
+<tr>
+<td>重新标记 (remark)</td>
+<td>是</td>
+<td>1.最终完成堆中所有存活对象的标记；<!-- raw HTML omitted -->2.这个阶段使用了一个叫SATB(snapshot-at-the-beginning)的算法，该算法比CMS收集器所用算法快非常多。</td>
+</tr>
+<tr>
+<td>并发清理 (cleanup)</td>
+<td>是（重置空区块阶段(3)为并发操作）</td>
+<td>1.清算存活对象以及空区块 (STW)；<!-- raw HTML omitted -->2.擦除 RSets (STW)；<!-- raw HTML omitted -->3.重置空区块，并添加进空闲区块列表；<!-- raw HTML omitted -->4.该阶段还会决定是否进入空间回收周期。</td>
+</tr>
+<tr>
+<td>空间回收周期（space reclamation</td>
+<td>是</td>
+<td>1.该过程会疏散或者复制存活对象那到新的未使用区块上；<!-- raw HTML omitted -->2.这过程可以包含多次 young gc，可以发生在年轻代区块中，GC日志中显示为[GC pause (young)]，或者同时发生在年轻代和老年代区块中，而GC日志中显示为[GC Pause (mixed)]；<!-- raw HTML omitted -->3.当G1判断不再值得回收老年代区块以获取更多空间的时候，便会结束该阶段，并进入下一个年轻代收集循环。</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>注意！当 G1 在回收存活对象或者是晋升对象到老年代的时候发生堆空间不足，将会触发晋升失败。此时，G1将进入 STW，并使用单线程来进行 Full GC。如果调优到位的话，你的应用应该避免Full GC发生。</p>
+</blockquote>
+<p>综上，G1 垃圾收集模式分为三种：</p>
+<ul>
+<li><strong>Young GC</strong>：当 G1 评估当前年轻代的回收时间接近 -XX:MaxGCPauseMillis 指定值的时候，会触发 Young GC；</li>
+<li><strong>Mixed GC</strong>：当 老年代占有率达到 -XX:InitiatingHeapOccupancyPercent 指定值的时候，会触发并发周期。而并发清理阶段阶段会判断是否需要进入空间回收周期。在空间回收周期内，会根据期望的GC停顿时间以及区块的回收价值等来决定是否进行以及进行多少次 Mixed GC；</li>
+<li><strong>Full GC</strong>：STW，单线程收集过程。</li>
+</ul>
+<h4 id="常用调优参数-1">常用调优参数：</h4>
+<table>
+<thead>
+<tr>
+<th>参数</th>
+<th>参数含义</th>
+<th>默认值</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>-XX:+UseG1GC</td>
+<td>指定使用 G1 垃圾收集器</td>
+<td></td>
+</tr>
+<tr>
+<td>-XX:MaxGCPauseMillis=200</td>
+<td>设定一个最大的GC停顿时间目标。这是一个软目标，JVM会尽最大努力满足这个目标。但不宜设置过小，以免因为每次回收垃圾过少而导致频繁 GC。</td>
+<td>200 (ms)</td>
+</tr>
+<tr>
+<td>-XX:GCPauseTimeInterval=&lt;ergo&gt;</td>
+<td>GC 停顿间隔时间</td>
+<td>G1 在默认情况下不设置该值，而允许G1在一些极端的情况下连续执行垃圾回收</td>
+</tr>
+<tr>
+<td>-XX:ParallelGCThreads=&lt;ergo&gt;</td>
+<td>并行阶段最大的线程数</td>
+<td>根据CPU核心数N进行计算，如果N&lt;8，那么ParallelGCThreads=N；如果N&gt;=8，那么ParallelGCThreads=N*5/8</td>
+</tr>
+<tr>
+<td>-XX:ConcGCThreads=&lt;ergo&gt;</td>
+<td>并发阶段最大的线程数</td>
+<td>默认值是-XX:ParallelGCThreads的值除以4</td>
+</tr>
+<tr>
+<td>-XX:+G1UseAdaptiveIHOP <!-- raw HTML omitted --> -XX:InitiatingHeapOccupancyPercent=45</td>
+<td>配置启用IHOP，以及配置触发比例</td>
+<td>默认启用，触发比例为45%。注意，-XX:+G1UseAdaptiveIHOP这个选项会在JDK9里默认启用，即-XX:InitiatingHeapOccupancyPercent和XX:+GIUseAdaptivelHOP在JDK9之后只需要启用一个就可以了。JDK8环境下运行该选项会输出:“Unrecognized VM option ‘G1UseAdaptivelHOP’”</td>
+</tr>
+<tr>
+<td>-XX:G1HeapRegionSize=&lt;ergo&gt;</td>
+<td>设置区块大小</td>
+<td>整个堆最多划分为2048个Region，Region的大小一定是在1～32M之间，并且是2的N次方。 所以，如果堆的尺寸小于2G，那么Region数量就会少于2048。如果设置的堆大于64G，JVM会适当增加region的数量，但是region大小一定不会超过32M。</td>
+</tr>
+<tr>
+<td>-XX:G1NewSizePercent=5<!-- raw HTML omitted -->-XX:G1MaxNewSizePercent=60</td>
+<td>配置年轻代占比的最小值和最大值</td>
+<td>最小值默认为5%，最大值默认为60%</td>
+</tr>
+<tr>
+<td>-XX:G1HeapWastePercent=5</td>
+<td>允许浪费的堆内存比例。如果可回收百分比低于这个百分比，那么G1就不会触发Mixed GC。</td>
+<td>默认值5%</td>
+</tr>
+<tr>
+<td>-XX:G1MixedGCCountTarget=8</td>
+<td>设置空间清理阶段的回收次数</td>
+<td>默认不超过8次</td>
+</tr>
+<tr>
+<td>-XX:G1MixedGCLiveThresholdPercent=85</td>
+<td>如果老年代区块内部存活对象超过该比例，那么在空间清理阶段不会将该区块加入 CSet，也就是不会对其进行回收</td>
+<td>默认值85%</td>
+</tr>
+<tr>
+<td>-XX:G1ReservePercent=10</td>
+<td>设置堆的保留空间阈值以降低发生晋升失败的可能。</td>
+<td>默认值是10</td>
+</tr>
+<tr>
+<td>-XX:G1OldCSetRegionThresholdPercent=10</td>
+<td>设置Mixed GC期间要回收的老年代Region数量上限，即一次Mixed GC中最多可以被选入CSet中的老年代Region数量。</td>
+<td>默认值10%</td>
+</tr>
+</tbody>
+</table>
+<h4 id="gc-日志案例-1">GC 日志案例：</h4>
+<ul>
+<li>
+<p>案例一</p>
+<blockquote>
+<p>CommandLine flags: -XX:G1NewSizePercent=20 -XX:+HeapDumpOnOutOfMemoryError -XX:InitialHeapSize=3221225472 -XX:MaxGCPauseMillis=500 -XX:MaxHeapSize=5872025600 -XX:-OmitStackTraceInFastThrow -XX:+PrintGC -XX:+PrintGCDateStamps -XX:+PrintGCDetails -XX:+PrintGCTimeStamps -XX:+UnlockExperimentalVMOptions -XX:+UseCompressedClassPointers -XX:+UseCompressedOops -XX:+UseG1GC</p>
+</blockquote>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#75715e">## Young GC（以下同，略去详细内容）</span>
+2021-01-08T04:12:09.331+0800: 1172604.919: <span style="color:#f92672">[</span>GC pause <span style="color:#f92672">(</span>G1 Evacuation Pause<span style="color:#f92672">)</span> <span style="color:#f92672">(</span>young<span style="color:#f92672">)</span>, 0.0184242 secs<span style="color:#f92672">]</span>
+  <span style="color:#f92672">[</span>Parallel Time: 15.1 ms, GC Workers: 4<span style="color:#f92672">]</span>
+      <span style="color:#f92672">[</span>GC Worker Start <span style="color:#f92672">(</span>ms<span style="color:#f92672">)</span>: Min: 1172604919.7, Avg: 1172604919.8, Max: 1172604919.8, Diff: 0.1<span style="color:#f92672">]</span>
+      <span style="color:#f92672">[</span>Ext Root Scanning <span style="color:#f92672">(</span>ms<span style="color:#f92672">)</span>: Min: 1.4, Avg: 1.7, Max: 2.6, Diff: 1.2, Sum: 6.9<span style="color:#f92672">]</span>
+      <span style="color:#f92672">[</span>Update RS <span style="color:#f92672">(</span>ms<span style="color:#f92672">)</span>: Min: 6.8, Avg: 7.4, Max: 7.8, Diff: 1.0, Sum: 29.8<span style="color:#f92672">]</span>
+        <span style="color:#f92672">[</span>Processed Buffers: Min: 11, Avg: 18.2, Max: 27, Diff: 16, Sum: 73<span style="color:#f92672">]</span>
+      <span style="color:#f92672">[</span>Scan RS <span style="color:#f92672">(</span>ms<span style="color:#f92672">)</span>: Min: 0.4, Avg: 0.6, Max: 0.6, Diff: 0.2, Sum: 2.2<span style="color:#f92672">]</span>
+      <span style="color:#f92672">[</span>Code Root Scanning <span style="color:#f92672">(</span>ms<span style="color:#f92672">)</span>: Min: 0.0, Avg: 0.1, Max: 0.1, Diff: 0.1, Sum: 0.3<span style="color:#f92672">]</span>
+      <span style="color:#f92672">[</span>Object Copy <span style="color:#f92672">(</span>ms<span style="color:#f92672">)</span>: Min: 4.9, Avg: 5.0, Max: 5.1, Diff: 0.2, Sum: 19.9<span style="color:#f92672">]</span>
+      <span style="color:#f92672">[</span>Termination <span style="color:#f92672">(</span>ms<span style="color:#f92672">)</span>: Min: 0.0, Avg: 0.0, Max: 0.0, Diff: 0.0, Sum: 0.0<span style="color:#f92672">]</span>
+        <span style="color:#f92672">[</span>Termination Attempts: Min: 1, Avg: 1.0, Max: 1, Diff: 0, Sum: 4<span style="color:#f92672">]</span>
+      <span style="color:#f92672">[</span>GC Worker Other <span style="color:#f92672">(</span>ms<span style="color:#f92672">)</span>: Min: 0.1, Avg: 0.1, Max: 0.1, Diff: 0.1, Sum: 0.4<span style="color:#f92672">]</span>
+      <span style="color:#f92672">[</span>GC Worker Total <span style="color:#f92672">(</span>ms<span style="color:#f92672">)</span>: Min: 14.8, Avg: 14.9, Max: 15.0, Diff: 0.2, Sum: 59.5<span style="color:#f92672">]</span>
+      <span style="color:#f92672">[</span>GC Worker End <span style="color:#f92672">(</span>ms<span style="color:#f92672">)</span>: Min: 1172604934.6, Avg: 1172604934.6, Max: 1172604934.7, Diff: 0.1<span style="color:#f92672">]</span>
+  <span style="color:#f92672">[</span>Code Root Fixup: 0.0 ms<span style="color:#f92672">]</span>
+  <span style="color:#f92672">[</span>Code Root Purge: 0.0 ms<span style="color:#f92672">]</span>
+  <span style="color:#f92672">[</span>Clear CT: 0.5 ms<span style="color:#f92672">]</span>
+  <span style="color:#f92672">[</span>Other: 2.8 ms<span style="color:#f92672">]</span>
+      <span style="color:#f92672">[</span>Choose CSet: 0.0 ms<span style="color:#f92672">]</span>
+      <span style="color:#f92672">[</span>Ref Proc: 0.3 ms<span style="color:#f92672">]</span>
+      <span style="color:#f92672">[</span>Ref Enq: 0.0 ms<span style="color:#f92672">]</span>
+      <span style="color:#f92672">[</span>Redirty Cards: 0.1 ms<span style="color:#f92672">]</span>
+      <span style="color:#f92672">[</span>Humongous Register: 0.2 ms<span style="color:#f92672">]</span>
+      <span style="color:#f92672">[</span>Humongous Reclaim: 0.0 ms<span style="color:#f92672">]</span>
+      <span style="color:#f92672">[</span>Free CSet: 1.9 ms<span style="color:#f92672">]</span>
+  <span style="color:#f92672">[</span>Eden: 2498.0M<span style="color:#f92672">(</span>2498.0M<span style="color:#f92672">)</span>-&gt;0.0B<span style="color:#f92672">(</span>2496.0M<span style="color:#f92672">)</span> Survivors: 6144.0K-&gt;6144.0K Heap: 5011.5M<span style="color:#f92672">(</span>5576.0M<span style="color:#f92672">)</span>-&gt;2513.8M<span style="color:#f92672">(</span>5576.0M<span style="color:#f92672">)]</span>
+<span style="color:#f92672">[</span>Times: user<span style="color:#f92672">=</span>0.06 sys<span style="color:#f92672">=</span>0.00, real<span style="color:#f92672">=</span>0.02 secs<span style="color:#f92672">]</span> 
+<span style="color:#75715e">## 初始标记 initial-mark</span>
+2021-01-08T04:12:18.958+0800: 1172614.546: <span style="color:#f92672">[</span>GC pause <span style="color:#f92672">(</span>G1 Evacuation Pause<span style="color:#f92672">)</span> <span style="color:#f92672">(</span>young<span style="color:#f92672">)</span> <span style="color:#f92672">(</span>initial-mark<span style="color:#f92672">)</span>, 0.0199455 secs<span style="color:#f92672">]</span>
+  <span style="color:#75715e">### ......</span>
+  <span style="color:#f92672">[</span>Eden: 2496.0M<span style="color:#f92672">(</span>2496.0M<span style="color:#f92672">)</span>-&gt;0.0B<span style="color:#f92672">(</span>2492.0M<span style="color:#f92672">)</span> Survivors: 6144.0K-&gt;8192.0K Heap: 5009.8M<span style="color:#f92672">(</span>5576.0M<span style="color:#f92672">)</span>-&gt;2515.0M<span style="color:#f92672">(</span>5576.0M<span style="color:#f92672">)]</span>
+<span style="color:#f92672">[</span>Times: user<span style="color:#f92672">=</span>0.05 sys<span style="color:#f92672">=</span>0.02, real<span style="color:#f92672">=</span>0.02 secs<span style="color:#f92672">]</span> 
+<span style="color:#75715e">## 并发根节点扫描</span>
+2021-01-08T04:12:18.979+0800: 1172614.567: <span style="color:#f92672">[</span>GC concurrent-root-region-scan-start<span style="color:#f92672">]</span>
+2021-01-08T04:12:19.004+0800: 1172614.592: <span style="color:#f92672">[</span>GC concurrent-root-region-scan-end, 0.0256504 secs<span style="color:#f92672">]</span>
+<span style="color:#75715e">## 并发标记</span>
+2021-01-08T04:12:19.004+0800: 1172614.592: <span style="color:#f92672">[</span>GC concurrent-mark-start<span style="color:#f92672">]</span>
+2021-01-08T04:12:19.214+0800: 1172614.802: <span style="color:#f92672">[</span>GC concurrent-mark-end, 0.2101424 secs<span style="color:#f92672">]</span>
+<span style="color:#75715e">## 重新标记</span>
+2021-01-08T04:12:19.215+0800: 1172614.803: <span style="color:#f92672">[</span>GC remark 2021-01-08T04:12:19.215+0800: 1172614.803: <span style="color:#f92672">[</span>Finalize Marking, 0.0003026 secs<span style="color:#f92672">]</span> 2021-01-08T04:12:19.215+0800: 1172614.803: <span style="color:#f92672">[</span>GC ref-proc, 0.7285039 secs<span style="color:#f92672">]</span> 2021-01-08T04:12:19.944+0800: 1172615.532: <span style="color:#f92672">[</span>Unloading, 0.0301928 secs<span style="color:#f92672">]</span>, 0.7619789 secs<span style="color:#f92672">]</span>
+<span style="color:#f92672">[</span>Times: user<span style="color:#f92672">=</span>0.95 sys<span style="color:#f92672">=</span>0.02, real<span style="color:#f92672">=</span>0.77 secs<span style="color:#f92672">]</span> 
+<span style="color:#75715e">## 清理阶段</span>
+2021-01-08T04:12:19.978+0800: 1172615.566: <span style="color:#f92672">[</span>GC cleanup 2575M-&gt;2567M<span style="color:#f92672">(</span>5576M<span style="color:#f92672">)</span>, 0.0076275 secs<span style="color:#f92672">]</span>
+<span style="color:#f92672">[</span>Times: user<span style="color:#f92672">=</span>0.00 sys<span style="color:#f92672">=</span>0.00, real<span style="color:#f92672">=</span>0.01 secs<span style="color:#f92672">]</span> 
+2021-01-08T04:12:19.986+0800: 1172615.574: <span style="color:#f92672">[</span>GC concurrent-cleanup-start<span style="color:#f92672">]</span>
+2021-01-08T04:12:19.986+0800: 1172615.574: <span style="color:#f92672">[</span>GC concurrent-cleanup-end, 0.0000396 secs<span style="color:#f92672">]</span>
+<span style="color:#75715e">## 空间收集阶段的 young gc</span>
+2021-01-08T04:12:28.168+0800: 1172623.756: <span style="color:#f92672">[</span>GC pause <span style="color:#f92672">(</span>G1 Evacuation Pause<span style="color:#f92672">)</span> <span style="color:#f92672">(</span>young<span style="color:#f92672">)</span>, 0.0249811 secs<span style="color:#f92672">]</span>
+   <span style="color:#75715e">### ......</span>
+  <span style="color:#f92672">[</span>Eden: 2492.0M<span style="color:#f92672">(</span>2492.0M<span style="color:#f92672">)</span>-&gt;0.0B<span style="color:#f92672">(</span>1110.0M<span style="color:#f92672">)</span> Survivors: 8192.0K-&gt;4096.0K Heap: 4999.0M<span style="color:#f92672">(</span>5576.0M<span style="color:#f92672">)</span>-&gt;2504.2M<span style="color:#f92672">(</span>5576.0M<span style="color:#f92672">)]</span>
+<span style="color:#f92672">[</span>Times: user<span style="color:#f92672">=</span>0.06 sys<span style="color:#f92672">=</span>0.03, real<span style="color:#f92672">=</span>0.02 secs<span style="color:#f92672">]</span> 
+<span style="color:#75715e">## 空间收集阶段的 young gc（mixed)</span>
+2021-01-08T04:12:31.149+0800: 1172626.737: <span style="color:#f92672">[</span>GC pause <span style="color:#f92672">(</span>G1 Evacuation Pause<span style="color:#f92672">)</span> <span style="color:#f92672">(</span>mixed<span style="color:#f92672">)</span>, 0.0437074 secs<span style="color:#f92672">]</span>
+  <span style="color:#75715e">### ......</span>
+  <span style="color:#f92672">[</span>Eden: 1110.0M<span style="color:#f92672">(</span>1110.0M<span style="color:#f92672">)</span>-&gt;0.0B<span style="color:#f92672">(</span>1108.0M<span style="color:#f92672">)</span> Survivors: 4096.0K-&gt;6144.0K Heap: 3614.2M<span style="color:#f92672">(</span>5576.0M<span style="color:#f92672">)</span>-&gt;2206.5M<span style="color:#f92672">(</span>5576.0M<span style="color:#f92672">)]</span>
+<span style="color:#f92672">[</span>Times: user<span style="color:#f92672">=</span>0.10 sys<span style="color:#f92672">=</span>0.04, real<span style="color:#f92672">=</span>0.04 secs<span style="color:#f92672">]</span> 
+<span style="color:#75715e">## 空间收集阶段的 young gc（mixed)</span>
+2021-01-08T04:12:34.734+0800: 1172630.322: <span style="color:#f92672">[</span>GC pause <span style="color:#f92672">(</span>G1 Evacuation Pause<span style="color:#f92672">)</span> <span style="color:#f92672">(</span>mixed<span style="color:#f92672">)</span>, 0.0397893 secs<span style="color:#f92672">]</span>
+  <span style="color:#75715e">### ......</span>
+  <span style="color:#f92672">[</span>Eden: 1108.0M<span style="color:#f92672">(</span>1108.0M<span style="color:#f92672">)</span>-&gt;0.0B<span style="color:#f92672">(</span>1108.0M<span style="color:#f92672">)</span> Survivors: 6144.0K-&gt;6144.0K Heap: 3314.5M<span style="color:#f92672">(</span>5576.0M<span style="color:#f92672">)</span>-&gt;1916.7M<span style="color:#f92672">(</span>5576.0M<span style="color:#f92672">)]</span>
+<span style="color:#f92672">[</span>Times: user<span style="color:#f92672">=</span>0.10 sys<span style="color:#f92672">=</span>0.04, real<span style="color:#f92672">=</span>0.04 secs<span style="color:#f92672">]</span> 
+<span style="color:#75715e">## 空间收集阶段的 young gc（mixed)</span>
+2021-01-08T04:12:39.836+0800: 1172635.424: <span style="color:#f92672">[</span>GC pause <span style="color:#f92672">(</span>G1 Evacuation Pause<span style="color:#f92672">)</span> <span style="color:#f92672">(</span>mixed<span style="color:#f92672">)</span>, 0.0539989 secs<span style="color:#f92672">]</span>
+  <span style="color:#75715e">### ......</span>
+  <span style="color:#f92672">[</span>Eden: 1108.0M<span style="color:#f92672">(</span>1108.0M<span style="color:#f92672">)</span>-&gt;0.0B<span style="color:#f92672">(</span>1110.0M<span style="color:#f92672">)</span> Survivors: 6144.0K-&gt;4096.0K Heap: 3024.7M<span style="color:#f92672">(</span>5576.0M<span style="color:#f92672">)</span>-&gt;1536.4M<span style="color:#f92672">(</span>5576.0M<span style="color:#f92672">)]</span>
+<span style="color:#f92672">[</span>Times: user<span style="color:#f92672">=</span>0.13 sys<span style="color:#f92672">=</span>0.05, real<span style="color:#f92672">=</span>0.05 secs<span style="color:#f92672">]</span> 
+</code></pre></div><ul>
+<li>案例二</li>
+</ul>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#75715e">## 大对象收集</span>
+<span style="color:#f92672">[</span>GC pause <span style="color:#f92672">(</span>G1 Humongous Allocation<span style="color:#f92672">)</span> <span style="color:#f92672">(</span>young<span style="color:#f92672">)</span>, 0.0022191 secs<span style="color:#f92672">]</span>
+ <span style="color:#f92672">[</span>Parallel Time: 1.3 ms, GC Workers: 4<span style="color:#f92672">]</span>
+    <span style="color:#f92672">[</span>GC Worker Start <span style="color:#f92672">(</span>ms<span style="color:#f92672">)</span>: Min: 909912.8, Avg: 909913.1, Max: 909913.9, Diff: 1.1<span style="color:#f92672">]</span>
+    <span style="color:#f92672">[</span>Ext Root Scanning <span style="color:#f92672">(</span>ms<span style="color:#f92672">)</span>: Min: 0.0, Avg: 0.3, Max: 0.4, Diff: 0.4, Sum: 1.1<span style="color:#f92672">]</span>
+    <span style="color:#f92672">[</span>Update RS <span style="color:#f92672">(</span>ms<span style="color:#f92672">)</span>: Min: 0.0, Avg: 0.1, Max: 0.3, Diff: 0.3, Sum: 0.4<span style="color:#f92672">]</span>
+       <span style="color:#f92672">[</span>Processed Buffers: Min: 0, Avg: 2.2, Max: 3, Diff: 3, Sum: 9<span style="color:#f92672">]</span>
+    <span style="color:#f92672">[</span>Scan RS <span style="color:#f92672">(</span>ms<span style="color:#f92672">)</span>: Min: 0.0, Avg: 0.0, Max: 0.0, Diff: 0.0, Sum: 0.0<span style="color:#f92672">]</span>
+    <span style="color:#f92672">[</span>Code Root Scanning <span style="color:#f92672">(</span>ms<span style="color:#f92672">)</span>: Min: 0.0, Avg: 0.0, Max: 0.0, Diff: 0.0, Sum: 0.0<span style="color:#f92672">]</span>
+    <span style="color:#f92672">[</span>Object Copy <span style="color:#f92672">(</span>ms<span style="color:#f92672">)</span>: Min: 0.0, Avg: 0.0, Max: 0.1, Diff: 0.1, Sum: 0.1<span style="color:#f92672">]</span>
+    <span style="color:#f92672">[</span>Termination <span style="color:#f92672">(</span>ms<span style="color:#f92672">)</span>: Min: 0.0, Avg: 0.5, Max: 0.7, Diff: 0.7, Sum: 1.8<span style="color:#f92672">]</span>
+       <span style="color:#f92672">[</span>Termination Attempts: Min: 1, Avg: 1.0, Max: 1, Diff: 0, Sum: 4<span style="color:#f92672">]</span>
+    <span style="color:#f92672">[</span>GC Worker Other <span style="color:#f92672">(</span>ms<span style="color:#f92672">)</span>: Min: 0.0, Avg: 0.0, Max: 0.0, Diff: 0.0, Sum: 0.1<span style="color:#f92672">]</span>
+    <span style="color:#f92672">[</span>GC Worker Total <span style="color:#f92672">(</span>ms<span style="color:#f92672">)</span>: Min: 0.0, Avg: 0.9, Max: 1.2, Diff: 1.2, Sum: 3.5<span style="color:#f92672">]</span>
+    <span style="color:#f92672">[</span>GC Worker End <span style="color:#f92672">(</span>ms<span style="color:#f92672">)</span>: Min: 909914.0, Avg: 909914.0, Max: 909914.1, Diff: 0.1<span style="color:#f92672">]</span>
+ <span style="color:#f92672">[</span>Code Root Fixup: 0.0 ms<span style="color:#f92672">]</span>
+ <span style="color:#f92672">[</span>Code Root Purge: 0.0 ms<span style="color:#f92672">]</span>
+ <span style="color:#f92672">[</span>Clear CT: 0.0 ms<span style="color:#f92672">]</span>
+ <span style="color:#f92672">[</span>Other: 0.9 ms<span style="color:#f92672">]</span>
+    <span style="color:#f92672">[</span>Choose CSet: 0.0 ms<span style="color:#f92672">]</span>
+    <span style="color:#f92672">[</span>Ref Proc: 0.8 ms<span style="color:#f92672">]</span>
+    <span style="color:#f92672">[</span>Ref Enq: 0.0 ms<span style="color:#f92672">]</span>
+    <span style="color:#f92672">[</span>Redirty Cards: 0.1 ms<span style="color:#f92672">]</span>
+    <span style="color:#f92672">[</span>Humongous Register: 0.0 ms<span style="color:#f92672">]</span>
+    <span style="color:#f92672">[</span>Humongous Reclaim: 0.0 ms<span style="color:#f92672">]</span>
+    <span style="color:#f92672">[</span>Free CSet: 0.0 ms<span style="color:#f92672">]</span>
+ <span style="color:#f92672">[</span>Eden: 0.0B<span style="color:#f92672">(</span>2048.0K<span style="color:#f92672">)</span>-&gt;0.0B<span style="color:#f92672">(</span>2048.0K<span style="color:#f92672">)</span> Survivors: 0.0B-&gt;0.0B Heap: 38.1M<span style="color:#f92672">(</span>50.0M<span style="color:#f92672">)</span>-&gt;38.1M<span style="color:#f92672">(</span>50.0M<span style="color:#f92672">)]</span>
+<span style="color:#f92672">[</span>Times: user<span style="color:#f92672">=</span>0.00 sys<span style="color:#f92672">=</span>0.01, real<span style="color:#f92672">=</span>0.00 secs<span style="color:#f92672">]</span> 
+<span style="color:#75715e">## Full GC</span>
+<span style="color:#f92672">[</span>Full GC <span style="color:#f92672">(</span>Allocation Failure<span style="color:#f92672">)</span>  38M-&gt;37M<span style="color:#f92672">(</span>50M<span style="color:#f92672">)</span>, 0.0419625 secs<span style="color:#f92672">]</span>
+  <span style="color:#f92672">[</span>Eden: 0.0B<span style="color:#f92672">(</span>2048.0K<span style="color:#f92672">)</span>-&gt;0.0B<span style="color:#f92672">(</span>2048.0K<span style="color:#f92672">)</span> Survivors: 0.0B-&gt;0.0B Heap: 38.1M<span style="color:#f92672">(</span>50.0M<span style="color:#f92672">)</span>-&gt;37.9M<span style="color:#f92672">(</span>50.0M<span style="color:#f92672">)]</span>, <span style="color:#f92672">[</span>Metaspace: 30407K-&gt;30407K<span style="color:#f92672">(</span>1077248K<span style="color:#f92672">)]</span>
+<span style="color:#f92672">[</span>Times: user<span style="color:#f92672">=</span>0.05 sys<span style="color:#f92672">=</span>0.00, real<span style="color:#f92672">=</span>0.04 secs<span style="color:#f92672">]</span> 
+<span style="color:#f92672">[</span>Full GC <span style="color:#f92672">(</span>Allocation Failure<span style="color:#f92672">)</span>  37M-&gt;37M<span style="color:#f92672">(</span>50M<span style="color:#f92672">)</span>, 0.0346627 secs<span style="color:#f92672">]</span>
+  <span style="color:#f92672">[</span>Eden: 0.0B<span style="color:#f92672">(</span>2048.0K<span style="color:#f92672">)</span>-&gt;0.0B<span style="color:#f92672">(</span>2048.0K<span style="color:#f92672">)</span> Survivors: 0.0B-&gt;0.0B Heap: 37.9M<span style="color:#f92672">(</span>50.0M<span style="color:#f92672">)</span>-&gt;37.9M<span style="color:#f92672">(</span>50.0M<span style="color:#f92672">)]</span>, <span style="color:#f92672">[</span>Metaspace: 30407K-&gt;30407K<span style="color:#f92672">(</span>1077248K<span style="color:#f92672">)]</span>
+<span style="color:#f92672">[</span>Times: user<span style="color:#f92672">=</span>0.05 sys<span style="color:#f92672">=</span>0.00, real<span style="color:#f92672">=</span>0.04 secs<span style="color:#f92672">]</span> 
+
+</code></pre></div></li>
+</ul>
+<h2 id="低延迟垃圾收集器">低延迟垃圾收集器</h2>
+<ul>
+<li>ZGC 收集器：JDK11 中推出的一款低延迟垃圾回收器，适用于大内存低延迟服务的内存管理和回收，SPECjbb 2015 基准测试，在 128G 的大堆下，最大停顿时间才 1.68 ms，停顿时间远胜于 G1 和 CMS。</li>
+<li>Shenandoah 收集器：由 Red Hat 的一个团队负责开发，与 G1 类似，基于 Region 设计的垃圾收集器，但不需要 Remember Set 或者 Card Table 来记录跨 Region 引用，停顿时间和堆的大小没有任何关系。停顿时间与 ZGC 接近。</li>
+</ul>
+<h1 id="常用垃圾收集器公共参数">常用垃圾收集器公共参数</h1>
+<ul>
+<li>
+<p>以下两个命令结合起来可以大致推敲 JVM 默认参数：</p>
+<pre><code>  java -XX:+PrintFlagsInitial ${pid}
+
+  jinfo ${pid}
+</code></pre></li>
+<li>
+<p>以下列举常用的一些公共参数：</p>
+<table>
+<thead>
+<tr>
+<th>参数</th>
+<th>参数含义</th>
+<th>默认值</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>-Xms -Xmx -Xmn</td>
+<td>指定堆启动内存、堆最大内存、年轻代内存。比如 -Xmx5g 表示堆最大内存为5g。</td>
+<td></td>
+</tr>
+<tr>
+<td>-XX:ErrorFile=file</td>
+<td>指定 Fatal Error日志文件位置，比如：./java_error_%p.log</td>
+<td></td>
+</tr>
+<tr>
+<td>-XX:+HeapDumpOnOutOfMemoryError</td>
+<td>指示 JVM 发生 OutOfMemory 的时候输出 dump 文件</td>
+<td></td>
+</tr>
+<tr>
+<td>-XX:-OmitStackTraceInFastThrow</td>
+<td>该参数禁用 OmitStackTraceInFastThrow。OmitStackTraceInFastThrow 默认开启，指示 hotspot 使用fast throw来优化这个抛出异常的地方，直接抛出一个事先分配好的、类型匹配的对象，这个对象的message和stack trace都被清空。所以开启OmitStackTraceInFastThrow不利于排查问题。</td>
+<td></td>
+</tr>
+<tr>
+<td>-XX:+PrintGC</td>
+<td>指示输出简要GC日志</td>
+<td></td>
+</tr>
+<tr>
+<td>-XX:+PrintGCDetails</td>
+<td>指示输出详细GC日志</td>
+<td></td>
+</tr>
+<tr>
+<td>-XX:+PrintGCApplicationStoppedTime</td>
+<td>指示打印STW时间</td>
+<td></td>
+</tr>
+<tr>
+<td>-XX:+PrintGCDateStamps</td>
+<td>指示输出GC的时间戳（以日期的形式，如 2013-05-04T21:53:59.234+0800）</td>
+<td></td>
+</tr>
+<tr>
+<td>-XX:+PrintGCTimeStamps</td>
+<td>该参数指示输出GC的时间戳（以JVM启动到当期的总时长的时间戳形式）</td>
+<td></td>
+</tr>
+<tr>
+<td>-XX:+UseCompressedClassPointers</td>
+<td>该参数指示压缩kclass指针大小</td>
+<td></td>
+</tr>
+<tr>
+<td>-XX:+UseCompressedOops</td>
+<td>该参数指示进行指针压缩（包含kclass指针和对象指针）</td>
+<td></td>
+</tr>
+<tr>
+<td>-Xloggc:${GC_LOG_PATH}</td>
+<td>该参数指示输出GC日志到文件</td>
+<td></td>
+</tr>
+<tr>
+<td>-XX:SurvivorRatio=8</td>
+<td>该参数设置的是Eden区与每一个Survivor区的比值，可以反推出占新生代的比值，Eden为8, 两个Survivor为1, Eden占新生代的4/5, 每个Survivor占1/10，两个占1/5</td>
+<td>默认8</td>
+</tr>
+<tr>
+<td>-XX:MetaspaceSize=64m <!-- raw HTML omitted --> -XX:MaxMetaspaceSize=128M</td>
+<td>该参数指定元数据空间初始扩容阈值为64m，最大扩容空间为128M</td>
+<td>默认值无穷大</td>
+</tr>
+</tbody>
+</table>
+</li>
+</ul>
+<h1 id="参考资料">参考资料</h1>
+<h2 id="g1-资料">G1 资料</h2>
+<ul>
+<li><a href="https://www.cnblogs.com/GrimMjx/p/12234564.html#_label2">《搞懂G1垃圾收集器》</a></li>
+<li><a href="https://www.oracle.com/technetwork/tutorials/tutorials-1876574.html">《Getting Started with the G1 Garbage Collector》</a></li>
+<li><a href="https://www.infoq.com/articles/G1-One-Garbage-Collector-To-Rule-Them-All/">《G1: One Garbage Collector To Rule Them All》</a></li>
+<li><a href="https://www.oracle.com/technical-resources/articles/java/g1gc.html">《Garbage First Garbage Collector Tuning》</a></li>
+</ul>
+<h2 id="其他资料">其他资料</h2>
+<ul>
+<li><a href="https://tech.meituan.com/2020/11/12/java-9-cms-gc.html">Java中9种常见的CMS GC问题分析与解决</a>:美团技术团队出品，深度分析了常见的多种 GC 优化情景。</li>
+</ul>
+              
+
+            </div>
+          </div>
+          <div id="post-footer" class="post-footer main-content-wrap">
+            
+              
+                
+                
+                  <div class="post-footer-tags">
+                    <span class="text-color-light text-small">标签</span><br/>
+                    
+  <a class="tag tag--primary tag--small" href="https://bayareageek.github.io/tags/java/">Java</a>
+
+  <a class="tag tag--primary tag--small" href="https://bayareageek.github.io/tags/jvm/">JVM</a>
+
+  <a class="tag tag--primary tag--small" href="https://bayareageek.github.io/tags/%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86%E5%99%A8/">垃圾收集器</a>
+
+                  </div>
+                
+              
+            
+            <div class="post-actions-wrap">
+  
+      <nav >
+        <ul class="post-actions post-action-nav">
+          
+            <li class="post-action">
+              
+                <a class="post-action-btn btn btn--default tooltip--top" href="https://bayareageek.github.io/post/java-%E8%99%9A%E6%8B%9F%E6%9C%BA%E5%8E%9F%E7%90%86-4-g1%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86%E5%99%A8%E5%85%A5%E9%97%A8/" data-tooltip="Java 虚拟机原理 (四) G1垃圾收集器入门" aria-label="下一篇: Java 虚拟机原理 (四) G1垃圾收集器入门">
+              
+                  <i class="fa fa-angle-left"></i>
+                  <span class="hide-xs hide-sm text-small icon-ml">下一篇</span>
+                </a>
+            </li>
+            <li class="post-action">
+              
+                <a class="post-action-btn btn btn--default tooltip--top" href="https://bayareageek.github.io/post/java-%E8%99%9A%E6%8B%9F%E6%9C%BA%E5%8E%9F%E7%90%86-2-%E5%AF%B9%E8%B1%A1%E5%88%9B%E5%BB%BA%E5%92%8C%E5%9B%9E%E6%94%B6/" data-tooltip="Java 虚拟机原理 (二) 对象创建与回收" aria-label="上一篇: Java 虚拟机原理 (二) 对象创建与回收">
+              
+                  <span class="hide-xs hide-sm text-small icon-mr">上一篇</span>
+                  <i class="fa fa-angle-right"></i>
+                </a>
+            </li>
+          
+        </ul>
+      </nav>
+    <ul class="post-actions post-action-share" >
+      
+        <li class="post-action hide-lg hide-md hide-sm">
+          <a class="post-action-btn btn btn--default btn-open-shareoptions" href="#btn-open-shareoptions" aria-label="分享这个帖子">
+            <i class="fa fa-share-alt" aria-hidden="true"></i>
+          </a>
+        </li>
+        
+          <li class="post-action hide-xs">
+            <a class="post-action-btn btn btn--default" target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://bayareageek.github.io/post/java-%E8%99%9A%E6%8B%9F%E6%9C%BA%E5%8E%9F%E7%90%86-3-%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86/" title="分享到 %s Facebook" aria-label="分享到 %s Facebook">
+              <i class="fab fa-facebook-square" aria-hidden="true"></i>
+            </a>
+          </li>
+        
+          <li class="post-action hide-xs">
+            <a class="post-action-btn btn btn--default" target="new" href="https://twitter.com/intent/tweet?text=https://bayareageek.github.io/post/java-%E8%99%9A%E6%8B%9F%E6%9C%BA%E5%8E%9F%E7%90%86-3-%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86/" title="分享到 %s Twitter" aria-label="分享到 %s Twitter">
+              <i class="fab fa-twitter" aria-hidden="true"></i>
+            </a>
+          </li>
+        
+          <li class="post-action hide-xs">
+            <a class="post-action-btn btn btn--default" target="new" href="https://plus.google.com/share?url=https://bayareageek.github.io/post/java-%E8%99%9A%E6%8B%9F%E6%9C%BA%E5%8E%9F%E7%90%86-3-%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86/" title="分享到 %s Google&#43;" aria-label="分享到 %s Google&#43;">
+              <i class="fab fa-google-plus" aria-hidden="true"></i>
+            </a>
+          </li>
+        
+      
+      
+        <li class="post-action">
+          <a class="post-action-btn btn btn--default" href="#gitalk" aria-label="发表评论">
+            <i class="fa fa-comment"></i>
+          </a>
+        </li>
+      
+      <li class="post-action">
+        
+          <a class="post-action-btn btn btn--default" href="#" aria-label="回到顶部">
+        
+          <i class="fa fa-list" aria-hidden="true"></i>
+        </a>
+      </li>
+    </ul>
+  
+</div>
+
+            
+  
+    <div id="gitalk">
+      <noscript>Please enable JavaScript to view the comments powered by Gitalk.</noscript>
+    </div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gitalk/1.7.2/gitalk.min.js" integrity="sha512-EcTCcXV46teiNwe0VcnM5A038tcY+BaQYO4nW6Gh2i7v4/HjBVg7xx3+JBLl9WofDds//INJAiEGAtdgr8PWyA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script type="text/javascript">
+      (function() {
+        if (["localhost", "127.0.0.1"].indexOf(window.location.hostname) != -1) {
+          document.getElementById('gitalk').innerHTML = 'Gitalk comments not available by default when the website is previewed locally.';
+          return;
+        }
+        new Gitalk({
+          clientID: '',
+          clientSecret: '',
+          repo: 'bayareageek.github.io',
+          owner: 'bayareageek',
+          admin: ['bayareageek'],
+          id: '\/post\/java-%E8%99%9A%E6%8B%9F%E6%9C%BA%E5%8E%9F%E7%90%86-3-%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86\/',
+          ...{"distractionfreemode":false,"enablehotkey":true,"language":"zh-CN","pagerdirection":"first","perpage":15}
+        }).render('gitalk')
+      })()
+    </script>
+  
+
+
+          </div>
+        </article>
+        <footer id="footer" class="main-content-wrap">
+  <span class="copyrights">
+    &copy; 2021 湾区极客. All Rights Reserved
+  </span>
+</footer>
+
+      </div>
+      <div id="bottom-bar" class="post-bottom-bar" data-behavior="5">
+        <div class="post-actions-wrap">
+  
+      <nav >
+        <ul class="post-actions post-action-nav">
+          
+            <li class="post-action">
+              
+                <a class="post-action-btn btn btn--default tooltip--top" href="https://bayareageek.github.io/post/java-%E8%99%9A%E6%8B%9F%E6%9C%BA%E5%8E%9F%E7%90%86-4-g1%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86%E5%99%A8%E5%85%A5%E9%97%A8/" data-tooltip="Java 虚拟机原理 (四) G1垃圾收集器入门" aria-label="下一篇: Java 虚拟机原理 (四) G1垃圾收集器入门">
+              
+                  <i class="fa fa-angle-left"></i>
+                  <span class="hide-xs hide-sm text-small icon-ml">下一篇</span>
+                </a>
+            </li>
+            <li class="post-action">
+              
+                <a class="post-action-btn btn btn--default tooltip--top" href="https://bayareageek.github.io/post/java-%E8%99%9A%E6%8B%9F%E6%9C%BA%E5%8E%9F%E7%90%86-2-%E5%AF%B9%E8%B1%A1%E5%88%9B%E5%BB%BA%E5%92%8C%E5%9B%9E%E6%94%B6/" data-tooltip="Java 虚拟机原理 (二) 对象创建与回收" aria-label="上一篇: Java 虚拟机原理 (二) 对象创建与回收">
+              
+                  <span class="hide-xs hide-sm text-small icon-mr">上一篇</span>
+                  <i class="fa fa-angle-right"></i>
+                </a>
+            </li>
+          
+        </ul>
+      </nav>
+    <ul class="post-actions post-action-share" >
+      
+        <li class="post-action hide-lg hide-md hide-sm">
+          <a class="post-action-btn btn btn--default btn-open-shareoptions" href="#btn-open-shareoptions" aria-label="分享这个帖子">
+            <i class="fa fa-share-alt" aria-hidden="true"></i>
+          </a>
+        </li>
+        
+          <li class="post-action hide-xs">
+            <a class="post-action-btn btn btn--default" target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://bayareageek.github.io/post/java-%E8%99%9A%E6%8B%9F%E6%9C%BA%E5%8E%9F%E7%90%86-3-%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86/" title="分享到 %s Facebook" aria-label="分享到 %s Facebook">
+              <i class="fab fa-facebook-square" aria-hidden="true"></i>
+            </a>
+          </li>
+        
+          <li class="post-action hide-xs">
+            <a class="post-action-btn btn btn--default" target="new" href="https://twitter.com/intent/tweet?text=https://bayareageek.github.io/post/java-%E8%99%9A%E6%8B%9F%E6%9C%BA%E5%8E%9F%E7%90%86-3-%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86/" title="分享到 %s Twitter" aria-label="分享到 %s Twitter">
+              <i class="fab fa-twitter" aria-hidden="true"></i>
+            </a>
+          </li>
+        
+          <li class="post-action hide-xs">
+            <a class="post-action-btn btn btn--default" target="new" href="https://plus.google.com/share?url=https://bayareageek.github.io/post/java-%E8%99%9A%E6%8B%9F%E6%9C%BA%E5%8E%9F%E7%90%86-3-%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86/" title="分享到 %s Google&#43;" aria-label="分享到 %s Google&#43;">
+              <i class="fab fa-google-plus" aria-hidden="true"></i>
+            </a>
+          </li>
+        
+      
+      
+        <li class="post-action">
+          <a class="post-action-btn btn btn--default" href="#gitalk" aria-label="发表评论">
+            <i class="fa fa-comment"></i>
+          </a>
+        </li>
+      
+      <li class="post-action">
+        
+          <a class="post-action-btn btn btn--default" href="#" aria-label="回到顶部">
+        
+          <i class="fa fa-list" aria-hidden="true"></i>
+        </a>
+      </li>
+    </ul>
+  
+</div>
+
+      </div>
+      
+<div id="share-options-bar" class="share-options-bar" data-behavior="5">
+  <i id="btn-close-shareoptions" class="fa fa-times"></i>
+  <ul class="share-options">
+    
+      <li class="share-option">
+        <a class="share-option-btn" target="new" href="https://www.facebook.com/sharer/sharer.php?u=https%3A%2F%2Fbayareageek.github.io%2Fpost%2Fjava-%25E8%2599%259A%25E6%258B%259F%25E6%259C%25BA%25E5%258E%259F%25E7%2590%2586-3-%25E5%259E%2583%25E5%259C%25BE%25E6%2594%25B6%25E9%259B%2586%2F" aria-label="分享到 %s Facebook">
+          <i class="fab fa-facebook-square" aria-hidden="true"></i><span>分享到 Facebook</span>
+        </a>
+      </li>
+    
+      <li class="share-option">
+        <a class="share-option-btn" target="new" href="https://twitter.com/intent/tweet?text=https%3A%2F%2Fbayareageek.github.io%2Fpost%2Fjava-%25E8%2599%259A%25E6%258B%259F%25E6%259C%25BA%25E5%258E%259F%25E7%2590%2586-3-%25E5%259E%2583%25E5%259C%25BE%25E6%2594%25B6%25E9%259B%2586%2F" aria-label="分享到 %s Twitter">
+          <i class="fab fa-twitter" aria-hidden="true"></i><span>分享到 Twitter</span>
+        </a>
+      </li>
+    
+      <li class="share-option">
+        <a class="share-option-btn" target="new" href="https://plus.google.com/share?url=https%3A%2F%2Fbayareageek.github.io%2Fpost%2Fjava-%25E8%2599%259A%25E6%258B%259F%25E6%259C%25BA%25E5%258E%259F%25E7%2590%2586-3-%25E5%259E%2583%25E5%259C%25BE%25E6%2594%25B6%25E9%259B%2586%2F" aria-label="分享到 %s Google&#43;">
+          <i class="fab fa-google-plus" aria-hidden="true"></i><span>分享到 Google&#43;</span>
+        </a>
+      </li>
+    
+  </ul>
+</div>
+<div id="share-options-mask" class="share-options-mask"></div>
+
+    </div>
+    
+    <div id="about">
+  <div id="about-card">
+    <div id="about-btn-close">
+      <i class="fa fa-times"></i>
+    </div>
+    
+      <img id="about-card-picture" src="https://bayareageek.github.io/images/advar.jpg" alt="作者的图片" />
+    
+    <h4 id="about-card-name">湾区极客</h4>
+    
+      <div id="about-card-bio">大湾区技术极客聚集地</div>
+    
+    
+      <div id="about-card-job">
+        <i class="fa fa-briefcase"></i>
+        <br/>
+        研发工程师
+      </div>
+    
+    
+      <div id="about-card-location">
+        <i class="fa fa-map-marker-alt"></i>
+        <br/>
+        中国·大湾区
+      </div>
+    
+  </div>
+</div>
+
+    
+
+    
+  
+    
+      <div id="cover" style="background-image:url('https://bayareageek.github.io/images/cover/program-cover.jpg');"></div>
+    
+  
+
+
+    
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js" integrity="sha512-894YE6QWD5I59HgZOGReFYm4dnWc1Qt5NtvYSaNcOP+u1T9qYdvdihz0PPSiiqn/+/3e7Jo4EaG7TubfWGUrMQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.1.0/highlight.min.js" integrity="sha512-z+/WWfyD5tccCukM4VvONpEtLmbAm5LDu7eKiyMQJ9m7OfPEDL7gENyDRL3Yfe8XAuGsS2fS4xSMnl6d30kqGQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/fancybox/3.5.7/jquery.fancybox.min.js" integrity="sha512-uURl+ZXMBrF4AwGaWmEetzrd+J5/8NRkWAvJx5sbPSSuOb0bZLqf+tOzniObO00BjHa/dD7gub9oCGMLPQHtQA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+
+
+<script src="https://bayareageek.github.io/js/script-8lglxdix2nqhalxxm2bujhkcc8cctdrd5o5axonwhfzx2zqrer5facyn8.min.js"></script>
+
+
+  
+    <script async crossorigin="anonymous" defer integrity="sha512-gE8KAQyFIzV1C9+GZ8TKJHZS2s+n7EjNtC+IMRn1l5+WYJTHOODUM6JSjZhFhqXmc7bG8Av6XXpckA4tYhflnw==" src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.1.0/languages/apache.min.js"></script>
+  
+
+  
+    <script async crossorigin="anonymous" defer integrity="sha512-EWROca+bote+7Oaaar1F6y74iZj1r1F9rm/ly7o+/FwJopbBaWtsFDmaKoZDd3QiGU2pGacBirHJNivmGLYrow==" src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.1.0/languages/go.min.js"></script>
+  
+
+  
+    <script async crossorigin="anonymous" defer integrity="sha512-GDVzAn0wpx1yVtQsRWmFc6PhJiLBPdUic+h4GWgljBh904O3JU10fk9EKNpVyIoPqkFn54rgL2QBG4BmUTMpiQ==" src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.1.0/languages/http.min.js"></script>
+  
+
+  
+    <script async crossorigin="anonymous" defer integrity="sha512-UgZlma8NzkrDb/NWgmLIcTrH7i/CSnLLDRFqCSNF5NGPpjKmzyM25qcoXGOup8+cDakKyaiTDd7N4dyH4YT+IA==" src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.1.0/languages/less.min.js"></script>
+  
+
+  
+    <script async crossorigin="anonymous" defer integrity="sha512-lot9koe73sfXIrUvIPM/UEhuMciN56RPyBdOyZgfO53P2lkWyyXN7J+njcxIIBRV+nVDQeiWtiXg+bLAJZDTfg==" src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.1.0/languages/nginx.min.js"></script>
+  
+
+  
+    <script async crossorigin="anonymous" defer integrity="sha512-Zd3e7XxHP00TD0Imr0PIfeM0fl0v95kMWuhyAS3Wn1UTSXTkz0OhtRgBAr4JlmADRgiXr4x7lpeUdqaGN8xIog==" src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.1.0/languages/puppet.min.js"></script>
+  
+
+  
+    <script async crossorigin="anonymous" defer integrity="sha512-qtqDO052iXMSP+5d/aE/jMtL9vIIGvONgTJziC2K/ZIB1yEGa55WVxGE9/08rSQ62EoDifS9SWVGZ7ihSLhzMA==" src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.1.0/languages/scss.min.js"></script>
+  
+
+  
+    <script async crossorigin="anonymous" defer integrity="sha512-1NmkjnEDnwwwcu28KoQF8vs3oaPFokQHbmbtwGhFfeDsQZtVFI8zW2aE9O8yMYdpdyKV/5blE4pSWw4Z/Sv97w==" src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.1.0/languages/stylus.min.js"></script>
+  
+
+  
+    <script async crossorigin="anonymous" defer integrity="sha512-B2wSfruPjr8EJL6IIzQr1eAuDwrsfIfccNf/LCEdxELCgC/S/ZMt/Uvk80aD79m7IqOqW+Sw8nbkvha20yZpzg==" src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.1.0/languages/swift.min.js"></script>
+  
+
+  
+    <script async crossorigin="anonymous" defer integrity="sha512-28oDiQZGKUVN6wQ7PSLPNipOcmkCALXKwOi7bnkyFf8QiMZQxG9EQoy/iiNx6Zxj2cG2SbVa4dXKigQhu7GiFw==" src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.1.0/languages/yaml.min.js"></script>
+  
+
+
+<script>
+$(document).ready(function() {
+  hljs.configure({ classPrefix: '', useBR: false });
+  $('pre.code-highlight > code, pre > code').each(function(i, block) {
+    if (!$(this).hasClass('codeblock')) {
+      $(this).addClass('codeblock');
+    }
+    hljs.highlightBlock(block);
+  });
+});
+</script>
+
+
+
+
+    
+  </body>
+</html>
+
